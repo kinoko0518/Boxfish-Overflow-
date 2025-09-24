@@ -1,0 +1,61 @@
+name: Rust Build
+
+# ワークフローが実行されるタイミングを定義
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# 環境変数を設定
+env:
+  CARGO_TERM_COLOR: always
+  EXECUTABLE_NAME: Boxfish-Overflow!-${{ github.sha }}
+
+jobs:
+  build:
+    # strategy.matrix を使って各OSでジョブを実行
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      # 1. リポジトリのコードをチェックアウト
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Rustの安定版ツールチェーンをセットアップ
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # 3. Cargoの依存関係をキャッシュしてビルドを高速化
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # 4. プロジェクトをビルド
+      - name: Build
+        run: cargo build --release --verbose
+
+      # 5. ビルドされた実行ファイルをアーティファクトとしてアップロード
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # アーティファクト名をOSごとに設定
+          name: ${{ env.EXECUTABLE_NAME }}-${{ runner.os }}
+          path: |
+            target/release/${{ env.EXECUTABLE_NAME }}
+            target/release/${{ env.EXECUTABLE_NAME }}.exe
+          # 実行ファイルが見つからなくてもエラーにしない (OSによって拡張子の有無が違うため)
+          if-no-files-found: ignore
