@@ -10,7 +10,9 @@ on:
 # 環境変数を設定
 env:
   CARGO_TERM_COLOR: always
-  EXECUTABLE_NAME: Boxfish-Overflow!-${{ github.sha }}
+  CRATE_NAME: boxfishoverflow
+  ARTIFACT_FILENAME: Boxfish-Overflow!-${{ github.sha }}
+
 
 jobs:
   build:
@@ -30,7 +32,23 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      # 3. Cargoの依存関係をキャッシュしてビルドを高速化
+      # 3. BevyのOS依存関係をインストール (Linuxのみ)
+      - name: Install Bevy dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libx11-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libvulkan-dev \
+            libasound2-dev \
+            libudev-dev \
+            pkg-config
+
+      # 4. Cargoの依存関係をキャッシュしてビルドを高速化
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
@@ -44,18 +62,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      # 4. プロジェクトをビルド
+      # 5. プロジェクトをビルド
       - name: Build
         run: cargo build --release --verbose
 
-      # 5. ビルドされた実行ファイルをアーティファクトとしてアップロード
+      # 6. ビルドされた実行ファイルをアーティファクトとしてアップロード
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           # アーティファクト名をOSごとに設定
-          name: ${{ env.EXECUTABLE_NAME }}-${{ runner.os }}
+          name: ${{ env.ARTIFACT_FILENAME }}-${{ runner.os }}
           path: |
-            target/release/${{ env.EXECUTABLE_NAME }}
-            target/release/${{ env.EXECUTABLE_NAME }}.exe
+            target/release/${{ env.CRATE_NAME }}
+            target/release/${{ env.CRATE_NAME }}.exe
           # 実行ファイルが見つからなくてもエラーにしない (OSによって拡張子の有無が違うため)
           if-no-files-found: ignore
