@@ -1,3 +1,4 @@
+use crate::{Bit, TILE_SIZE, TileCoords, tile::Collidable};
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -5,16 +6,6 @@ pub enum FaceState {
     Normal,
     Expanding,
     Surplising,
-}
-
-#[derive(Component)]
-pub struct Tile {
-    tile_pos: IVec2,
-}
-
-#[derive(Component)]
-pub struct Bit {
-    boolean: bool,
 }
 
 #[derive(Component)]
@@ -27,17 +18,23 @@ pub struct Body {
 pub struct Tail;
 
 #[derive(Component)]
+pub struct Head;
+
+#[derive(Component)]
 pub struct Player;
 
-const TILE_SIZE: usize = 16;
+const SHRINK_PER_TILE: f32 = 0.05;
+const SECONDS_PER_TILE: f32 = 0.2;
+
 pub fn boxfish_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             Sprite::from_image(asset_server.load("boxfish/head.png")),
             Transform::from_xyz(0., 0., 0.),
             FaceState::Normal,
+            Head,
             Player,
-            Tile {
+            TileCoords {
                 tile_pos: IVec2::new(0, 0),
             },
         ))
@@ -82,8 +79,6 @@ pub fn bit_system(mut query: Query<(&mut Sprite, &Bit)>, asset_server: Res<Asset
     }
 }
 
-const SHRINK_PER_TILE: f32 = 0.05;
-
 pub fn body_system(
     time: Res<Time>,
     mut query: Query<(&mut Transform, &mut Body, Option<&Tail>)>,
@@ -127,14 +122,23 @@ pub fn face_system(query: Query<(&mut Sprite, &FaceState)>, asset_server: Res<As
     }
 }
 
-const SECONDS_PER_TILE: f32 = 0.2;
-
 pub fn boxfish_moving(
     time: Res<Time>,
-    mut query: Query<(&mut Transform, &mut Tile), With<Player>>,
+    mut queries: ParamSet<(
+        Query<(&mut Transform, &mut TileCoords), With<Head>>,
+        Query<&TileCoords, With<Collidable>>,
+    )>,
+    body_query: Query<&Body>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
-    for (mut transform, mut tile) in &mut query {
+    let wall_positions: Vec<IVec2> = queries.p1().iter().map(|c| c.tile_pos).collect();
+    let body_length: usize = body_query
+        .iter()
+        .map(|b| 1 + if b.expanding { b.pos } else { 1 })
+        .max()
+        .unwrap_or(1);
+
+    if let Ok((mut transform, mut tile)) = queries.p0().single_mut() {
         let target_pos = Vec2::new(
             (tile.tile_pos.x * (TILE_SIZE as i32)) as f32,
             (tile.tile_pos.y * (TILE_SIZE as i32)) as f32,
@@ -142,23 +146,29 @@ pub fn boxfish_moving(
         let current_pos = transform.translation.xy();
         let difference = target_pos - current_pos;
 
-        // Check as if ideal position and real position corresponding
         if difference.length() < 0.1 {
-            // When corresponding, accept player input
             transform.translation.x = target_pos.x;
             transform.translation.y = target_pos.y;
 
             let direction = player_input(&keyboard_input);
             if direction != IVec2::ZERO {
-                tile.tile_pos += direction;
+                if (0..(body_length + 1)).any(|iter| {
+                    do_collide(
+                        &(tile.tile_pos - IVec2::new(iter as i32, 0)),
+                        &direction,
+                        &wall_positions,
+                    )
+                }) {
+                    println!("Collided!");
+                } else {
+                    tile.tile_pos += direction;
+                }
             }
         } else {
-            // When not, move character ideal position
             let move_speed = TILE_SIZE as f32 / SECONDS_PER_TILE;
             let direction_vec = difference.normalize();
             let travel_in_frame = direction_vec * move_speed * time.delta_secs();
 
-            // Adjust when overred
             if travel_in_frame.length() >= difference.length() {
                 transform.translation.x = target_pos.x;
                 transform.translation.y = target_pos.y;
@@ -167,6 +177,10 @@ pub fn boxfish_moving(
             }
         }
     }
+}
+
+fn do_collide(original: &IVec2, travel: &IVec2, walls: &[IVec2]) -> bool {
+    walls.contains(&(*original + *travel))
 }
 
 fn player_input(keyboard_input: &Res<ButtonInput<KeyCode>>) -> IVec2 {
