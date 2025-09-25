@@ -26,6 +26,8 @@ W            W
 W            W
 WWWWWWWWWWWWWW
 ";
+const WALL_TILESET: &str = "embedded://tile/wall.png";
+const LOGIGATE_TILESET: &str = "embedded://tile/logical_gates.png";
 
 pub fn parse_aquarium(
     mut commands: Commands,
@@ -34,7 +36,7 @@ pub fn parse_aquarium(
 ) {
     for (y, s) in PARSE_TARGET.lines().enumerate() {
         for (x, c) in s.chars().enumerate() {
-            let tile_set_image: Handle<Image> = asset_server.load("tile/logical_gates.png");
+            let tile_set_image: Handle<Image> = asset_server.load(LOGIGATE_TILESET);
             let tile_layout = TextureAtlasLayout::from_grid(UVec2::new(16, 16), 16, 16, None, None);
             let layout_handle = texture_atlas_layouts.add(tile_layout);
 
@@ -77,7 +79,7 @@ pub fn parse_aquarium(
                 }
                 'W' => {
                     commands.spawn((
-                        Sprite::from_image(asset_server.load("tile/wall.png")),
+                        Sprite::from_image(asset_server.load(WALL_TILESET)),
                         Transform::from_xyz(0., 0., 0.),
                         Collidable,
                         TileAdjust,
@@ -125,7 +127,6 @@ pub fn parse_aquarium(
 pub fn tile_adjust(mut query: Query<(&TileCoords, &mut Transform), With<TileAdjust>>) {
     for (t_coords, mut transform) in &mut query {
         let t_pos = t_coords.tile_pos;
-        println!("{}", t_pos);
         transform.translation = Vec3::new(
             (t_pos.x * (TILE_SIZE as i32)) as f32,
             (t_pos.y * (TILE_SIZE as i32)) as f32,

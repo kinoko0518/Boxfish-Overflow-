@@ -1,6 +1,16 @@
 use crate::{Bit, TILE_SIZE, TileCoords, tile::Collidable};
 use bevy::prelude::*;
 
+const HEAD_PATH: &str = "embedded://boxfish/head.png";
+const EXPANDING_PATH: &str = "embedded://boxfish/head_expanding.png";
+const SURPLIZING_PATH: &str = "embedded://boxfish/head_surplize.png";
+
+const BODY_PATH: &str = "embedded://boxfish/body.png";
+const TAIL_PATH: &str = "embedded://boxfish/tail.png";
+
+const ZERO_PATH: &str = "embedded://boxfish/0.png";
+const ONE_PATH: &str = "embedded://boxfish/1.png";
+
 #[derive(Component)]
 pub enum FaceState {
     Normal,
@@ -29,7 +39,7 @@ const SECONDS_PER_TILE: f32 = 0.2;
 pub fn boxfish_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
-            Sprite::from_image(asset_server.load("boxfish/head.png")),
+            Sprite::from_image(asset_server.load(HEAD_PATH)),
             Transform::from_xyz(0., 0., 0.),
             FaceState::Normal,
             Head,
@@ -43,7 +53,7 @@ pub fn boxfish_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             for iter in 0..BIT_LENGTH {
                 parent
                     .spawn((
-                        Sprite::from_image(asset_server.load("boxfish/body.png")),
+                        Sprite::from_image(asset_server.load(BODY_PATH)),
                         Transform::from_xyz(0., 0., 0.),
                         Body {
                             pos: iter,
@@ -51,13 +61,13 @@ pub fn boxfish_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         },
                     ))
                     .with_child((
-                        Sprite::from_image(asset_server.load("boxfish/0.png")),
+                        Sprite::from_image(asset_server.load(ZERO_PATH)),
                         Transform::from_xyz(0., 0., 0.),
                         Bit { boolean: false },
                     ));
             }
             parent.spawn((
-                Sprite::from_image(asset_server.load("boxfish/tail.png")),
+                Sprite::from_image(asset_server.load(TAIL_PATH)),
                 Transform::from_xyz(-(((BIT_LENGTH + 1) * TILE_SIZE) as f32), 0., 0.),
                 Body {
                     pos: BIT_LENGTH,
@@ -72,9 +82,9 @@ pub fn boxfish_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 pub fn bit_system(mut query: Query<(&mut Sprite, &Bit)>, asset_server: Res<AssetServer>) {
     for (mut sprite, bit) in &mut query {
         if bit.boolean {
-            sprite.image = asset_server.load("boxfish/1.png")
+            sprite.image = asset_server.load(ONE_PATH)
         } else {
-            sprite.image = asset_server.load("boxfish/0.png")
+            sprite.image = asset_server.load(ZERO_PATH)
         }
     }
 }
@@ -115,9 +125,9 @@ pub fn body_system(
 pub fn face_system(query: Query<(&mut Sprite, &FaceState)>, asset_server: Res<AssetServer>) {
     for (mut sprite, facestate) in query {
         sprite.image = asset_server.load(match facestate {
-            &FaceState::Normal => "boxfish/head.png",
-            &FaceState::Expanding => "boxfish/head_expanding.png",
-            &FaceState::Surplising => "boxfish/head_surplize.png",
+            &FaceState::Normal => HEAD_PATH,
+            &FaceState::Expanding => EXPANDING_PATH,
+            &FaceState::Surplising => SURPLIZING_PATH,
         })
     }
 }
@@ -137,7 +147,6 @@ pub fn boxfish_moving(
         .map(|b| 1 + if b.expanding { b.pos } else { 1 })
         .max()
         .unwrap_or(1);
-
     if let Ok((mut transform, mut tile)) = queries.p0().single_mut() {
         let target_pos = Vec2::new(
             (tile.tile_pos.x * (TILE_SIZE as i32)) as f32,
@@ -146,7 +155,9 @@ pub fn boxfish_moving(
         let current_pos = transform.translation.xy();
         let difference = target_pos - current_pos;
 
+        // Check as if ideal position and real position corresponding
         if difference.length() < 0.1 {
+            // When corresponding, accept player input
             transform.translation.x = target_pos.x;
             transform.translation.y = target_pos.y;
 
@@ -165,10 +176,12 @@ pub fn boxfish_moving(
                 }
             }
         } else {
+            // When not, move character ideal position
             let move_speed = TILE_SIZE as f32 / SECONDS_PER_TILE;
             let direction_vec = difference.normalize();
             let travel_in_frame = direction_vec * move_speed * time.delta_secs();
 
+            // Adjust when overred
             if travel_in_frame.length() >= difference.length() {
                 transform.translation.x = target_pos.x;
                 transform.translation.y = target_pos.y;
