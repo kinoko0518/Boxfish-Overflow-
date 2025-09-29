@@ -33,6 +33,12 @@ pub struct Head;
 #[derive(Component)]
 pub struct Player;
 
+#[derive(Event)]
+pub struct OnMoved {
+    from: IVec2,
+    direction: IVec2,
+}
+
 const SHRINK_PER_TILE: f32 = 0.05;
 const SECONDS_PER_TILE: f32 = 0.2;
 
@@ -59,11 +65,13 @@ pub fn boxfish_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                             pos: iter,
                             expanding: false,
                         },
+                        Player,
                     ))
                     .with_child((
                         Sprite::from_image(asset_server.load(ZERO_PATH)),
                         Transform::from_xyz(0., 0., 0.),
                         Bit { boolean: false },
+                        Player,
                     ));
             }
             parent.spawn((
@@ -74,6 +82,7 @@ pub fn boxfish_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     expanding: false,
                 },
                 Tail,
+                Player,
             ));
         });
     commands.spawn(Camera2d);
@@ -138,6 +147,7 @@ pub fn boxfish_moving(
         Query<(&mut Transform, &mut TileCoords), With<Head>>,
         Query<&TileCoords, With<Collidable>>,
     )>,
+    mut on_moved: EventWriter<OnMoved>,
     body_query: Query<&Body>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
@@ -163,16 +173,19 @@ pub fn boxfish_moving(
 
             let direction = player_input(&keyboard_input);
             if direction != IVec2::ZERO {
-                if (0..(body_length + 1)).any(|iter| {
+                let was_collided = (0..(body_length + 1)).any(|iter| {
                     do_collide(
                         &(tile.tile_pos - IVec2::new(iter as i32, 0)),
                         &direction,
                         &wall_positions,
                     )
-                }) {
-                    println!("Collided!");
-                } else {
+                });
+                if !was_collided {
                     tile.tile_pos += direction;
+                    on_moved.write(OnMoved {
+                        from: tile.tile_pos,
+                        direction: direction,
+                    });
                 }
             }
         } else {
@@ -194,6 +207,18 @@ pub fn boxfish_moving(
 
 fn do_collide(original: &IVec2, travel: &IVec2, walls: &[IVec2]) -> bool {
     walls.contains(&(*original + *travel))
+}
+
+pub fn bit_processing(
+    mut queries: ParamSet<(
+        Query<(&Bit, &TileCoords)>,
+        Query<&mut Bit, With<Player>>,
+    )>,
+    mut on_moved: EventReader<OnMoved>,
+) {
+    for travel in on_moved.read() {
+        do_collide(, travel.direction)
+    }
 }
 
 fn player_input(keyboard_input: &Res<ButtonInput<KeyCode>>) -> IVec2 {
