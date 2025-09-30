@@ -73,8 +73,8 @@ jobs:
           # アーティファクト名をOSごとに設定
           name: ${{ env.ARTIFACT_FILENAME }}-${{ runner.os }}
           path: |
-            target/release/${{ env.CRATE_NAME }}
-            target/release/${{ env.CRATE_NAME }}.exe
+            target/release/${{ env.CRATE_NAME }}-${{ matrix.os }}
+            target/release/${{ env.CRATE_NAME }}-${{ matrix.os }}.exe
           # 実行ファイルが見つからなくてもエラーにしない (OSによって拡張子の有無が違うため)
           if-no-files-found: ignore
 
