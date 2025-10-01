@@ -10,7 +10,7 @@ pub struct LogiGate;
 #[derive(Component)]
 pub struct TileAdjust;
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 pub enum LogiKind {
     And,
     Or,
@@ -24,7 +24,7 @@ W            W
 W            W
 W            W
 W            W
-WWWWWWWWWWWWWW
+WA00111010111W
 ";
 const WALL_TILESET: &str = "embedded://tile/wall.png";
 const LOGIGATE_TILESET: &str = "embedded://tile/logical_gates.png";
@@ -34,7 +34,7 @@ pub fn parse_aquarium(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    for (y, s) in PARSE_TARGET.lines().enumerate() {
+    for (y, s) in PARSE_TARGET.lines().rev().enumerate() {
         for (x, c) in s.chars().enumerate() {
             let tile_set_image: Handle<Image> = asset_server.load(LOGIGATE_TILESET);
             let tile_layout = TextureAtlasLayout::from_grid(UVec2::new(16, 16), 16, 16, None, None);
@@ -51,7 +51,7 @@ pub fn parse_aquarium(
                             tile_set_image,
                             TextureAtlas {
                                 layout: layout_handle,
-                                index: 16 + 1,
+                                index: 16,
                             },
                         ),
                         Transform::from_xyz(0., 0., 0.),
@@ -67,7 +67,7 @@ pub fn parse_aquarium(
                             tile_set_image,
                             TextureAtlas {
                                 layout: layout_handle,
-                                index: (16 * 3) + 1,
+                                index: 16 * 3,
                             },
                         ),
                         Transform::from_xyz(0., 0., 0.),

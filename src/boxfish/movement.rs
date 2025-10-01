@@ -1,7 +1,7 @@
 use crate::boxfish::{BitIter, Body, Collidable, Head, TILE_SIZE, TileCoords};
 use bevy::prelude::*;
 
-struct Travel {
+pub struct Travel {
     direction: Direction,
     amount: i32,
 }
@@ -35,7 +35,7 @@ impl Travel {
 
 #[derive(Event)]
 pub struct OnMoved {
-    travel: Travel,
+    pub travel: Travel,
 }
 
 const SECONDS_PER_TILE: f32 = 0.2;
@@ -101,10 +101,10 @@ pub fn boxfish_moving(
     }
 }
 
-fn do_collide(original: &IVec2, travel: &Travel, target: &[IVec2]) -> bool {
+pub fn do_collide(original: &IVec2, travel: &Travel, target: &[IVec2]) -> bool {
     target.iter().any(|t| collide_with(original, travel, t))
 }
-fn collide_with(original: &IVec2, travel: &Travel, target: &IVec2) -> bool {
+pub fn collide_with(original: &IVec2, travel: &Travel, target: &IVec2) -> bool {
     travel.get_route(*original).contains(target)
 }
 

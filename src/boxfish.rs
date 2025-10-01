@@ -7,9 +7,10 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<movement::OnMoved>()
             .add_systems(Startup, boxfish_setup)
-            .add_systems(Update, bit_system)
+            .add_systems(Update, bit_visualise)
             .add_systems(Update, body_system)
             .add_systems(Update, face_system)
+            .add_systems(Update, register::register_system)
             .add_systems(Update, movement::boxfish_moving);
     }
 }
@@ -52,10 +53,10 @@ pub struct BitIter {
 struct Tail;
 
 #[derive(Component)]
-struct Head;
+pub struct Head;
 
 #[derive(Component)]
-struct Player;
+pub struct Player;
 
 fn boxfish_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
@@ -100,7 +101,10 @@ fn boxfish_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2d);
 }
 
-fn bit_system(mut query: Query<(&mut Sprite, &Bit)>, asset_server: Res<AssetServer>) {
+fn bit_visualise(
+    mut query: Query<(&mut Sprite, &Bit), With<Player>>,
+    asset_server: Res<AssetServer>,
+) {
     for (mut sprite, bit) in &mut query {
         if bit.boolean {
             sprite.image = asset_server.load(ONE_PATH)
