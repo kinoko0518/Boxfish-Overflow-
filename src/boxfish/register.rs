@@ -1,4 +1,4 @@
-use bevy::{ecs::query::QueryIter, prelude::*};
+use bevy::prelude::*;
 
 use crate::{
     Bit, TileCoords,
