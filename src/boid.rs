@@ -1,4 +1,4 @@
-use bevy::{math::VectorSpace, prelude::*};
+use bevy::prelude::*;
 use rand::Rng;
 use std::f32::consts::PI;
 

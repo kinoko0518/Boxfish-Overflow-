@@ -34,6 +34,10 @@ pub fn parse_aquarium(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
+    commands.spawn(Sprite {
+        image: asset_server.load("embedded://background/aquarium.png"),
+        ..default()
+    });
     for (y, s) in PARSE_TARGET.lines().rev().enumerate() {
         for (x, c) in s.chars().enumerate() {
             let tile_set_image: Handle<Image> = asset_server.load(LOGIGATE_TILESET);

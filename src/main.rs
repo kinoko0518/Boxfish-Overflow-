@@ -5,13 +5,14 @@
 
 mod boid;
 mod boxfish;
+mod styling;
 mod tile;
 
 use bevy::prelude::*;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
 use boxfish::PlayerPlugin;
 
-use crate::boid::BoidPlugin;
+use crate::{boid::BoidPlugin, styling::StylingPlugin};
 
 const TILE_SIZE: usize = 16;
 
@@ -29,6 +30,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(EmbeddedAssetPlugin::default())
+        .add_plugins(StylingPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(BoidPlugin)
         .add_systems(Startup, (tile::parse_aquarium, tile::tile_adjust).chain())
