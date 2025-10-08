@@ -68,6 +68,8 @@ pub struct Head;
 #[derive(Component)]
 pub struct Player;
 
+/// ゲーム開始時に一度だけ呼び出され、プレイヤーの頭やカメラなどの
+/// ゲームを通して削除されないものを配置し、最初のステージを読み込む。
 fn aquarium_setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -87,6 +89,7 @@ fn aquarium_setup(
     event_writer.write(ConstructAquarium::test_stage());
 }
 
+/// 新しく読み込まれたステージを適用
 fn update_bits(
     mut head_query: Query<(Entity, Option<&Children>, &mut Transform, &mut TileCoords), With<Head>>,
     mut construct_aquarium: EventReader<ConstructAquarium>,
@@ -153,6 +156,7 @@ fn update_bits(
     ));
 }
 
+/// プレイヤーのレジスタの見た目を真理値に合わせて更新
 fn bit_visualise(
     mut query: Query<(&mut Sprite, &Bit), With<Player>>,
     asset_server: Res<AssetServer>,
@@ -166,12 +170,14 @@ fn bit_visualise(
     }
 }
 
+/// ハコフグくんの伸縮をコントール
 fn body_system(
     time: Res<Time>,
     mut query: Query<(&mut Transform, &mut Body, &BitIter, Option<&Tail>)>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
     for (mut transform, mut body, bit_iter, tail) in &mut query {
+        // 最終的にどの位置にいればいいかを計算する
         let ideal_x = if body.expanding {
             -(((bit_iter.pos + 1) * TILE_SIZE) as f32)
         } else {
@@ -180,10 +186,13 @@ fn body_system(
                 None => -(TILE_SIZE as f32),
             }
         };
+        // 理想の位置と今の位置の差
         let difference = transform.translation.x - ideal_x;
         if difference.abs() <= 0.01 {
+            // 差が一定以下のときのみ伸縮の入力を受け付ける
             body.expanding = keyboard_input.pressed(KeyCode::ShiftLeft);
         } else {
+            // このフレームに移動する量
             let shrink_speed = (TILE_SIZE as f32) / SHRINK_PER_TILE * time.delta_secs();
             let travel_in_frame = if difference.is_sign_positive() {
                 -shrink_speed
@@ -191,14 +200,17 @@ fn body_system(
                 shrink_speed
             };
             if difference.is_sign_positive() != (difference + travel_in_frame).is_sign_positive() {
+                // 行き過ぎた場合に修正
                 transform.translation.x = ideal_x;
             } else {
+                // 座標に移動量を加算
                 transform.translation.x += travel_in_frame;
             }
         }
     }
 }
 
+/// 表情をスプライトに反映させる
 fn face_system(query: Query<(&mut Sprite, &FaceState)>, asset_server: Res<AssetServer>) {
     for (mut sprite, facestate) in query {
         sprite.image = asset_server.load(match facestate {
