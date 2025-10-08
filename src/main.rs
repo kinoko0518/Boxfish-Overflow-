@@ -16,7 +16,7 @@ use crate::{aquarium::AquariumPlugin, boid::BoidPlugin, styling::StylingPlugin};
 
 const TILE_SIZE: usize = 16;
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct TileCoords {
     tile_pos: IVec2,
 }

@@ -25,7 +25,7 @@ pub struct LogiGate;
 #[derive(Component)]
 pub struct TileAdjust;
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
 pub enum LogiKind {
     And,
     Or,
@@ -47,7 +47,7 @@ impl ConstructAquarium {
 WWWWWWWWWWWW
 W    WWG11GW
 W          W
-W  O0110O  W
+W  A0110A  W
 W          W
 W          W
 WWWWWWWWWWWW
@@ -95,50 +95,80 @@ fn chars_into_tiles(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    for (y, s) in aquarium.lines().rev().enumerate() {
-        for (x, c) in s.chars().enumerate() {
-            let tile_set_image: Handle<Image> = asset_server.load(LOGIGATE_TILESET);
-            let tile_layout = TextureAtlasLayout::from_grid(UVec2::new(16, 16), 16, 16, None, None);
-            let layout_handle = texture_atlas_layouts.add(tile_layout);
+    let tile_set_image: Handle<Image> = asset_server.load(LOGIGATE_TILESET);
+    let tile_layout = TextureAtlasLayout::from_grid(UVec2::new(16, 16), 16, 16, None, None);
+    let layout_handle = texture_atlas_layouts.add(tile_layout);
 
+    for (y, s) in aquarium.lines().rev().enumerate() {
+        struct State {
+            bitkind: Option<LogiKind>,
+            tail_found: bool,
+        }
+        type LogigateBundle = (
+            Sprite,
+            LogiKind,
+            (Transform, TileCoords, Tiles, LogiGate, TileAdjust),
+        );
+        let mut state = State {
+            bitkind: None,
+            tail_found: false,
+        };
+        for (x, c) in s.chars().enumerate() {
             let coords = TileCoords {
                 tile_pos: IVec2::new(x as i32, y as i32),
             };
-            match c {
-                ' ' => (),
-                'A' => {
-                    commands.spawn((
-                        Sprite::from_atlas_image(
-                            tile_set_image,
-                            TextureAtlas {
-                                layout: layout_handle,
-                                index: 16,
-                            },
-                        ),
+            let bit_common_components = (
+                Transform::from_xyz(0., 0., 0.),
+                Tiles,
+                LogiGate,
+                TileAdjust,
+                coords.clone(),
+            );
+            let from_index = |x: usize, y: usize| -> Sprite {
+                Sprite::from_atlas_image(
+                    tile_set_image.clone(),
+                    TextureAtlas {
+                        layout: layout_handle.clone(),
+                        index: x + y * 16,
+                    },
+                )
+            };
+            let mut get_logigate =
+                |tail_index: (usize, usize), logikind: LogiKind| -> LogigateBundle {
+                    let gate_common_components = (
                         Transform::from_xyz(0., 0., 0.),
-                        coords,
+                        coords.clone(),
                         Tiles,
-                        LogiKind::And,
                         LogiGate,
                         TileAdjust,
-                    ));
+                    );
+                    let sprite: Sprite;
+                    let do_spawn_head = if let Some(bkind) = state.bitkind {
+                        bkind == logikind && state.tail_found
+                    } else {
+                        false
+                    };
+                    if do_spawn_head {
+                        sprite = from_index(tail_index.0 + 1, tail_index.1);
+                    } else {
+                        sprite = from_index(tail_index.0, tail_index.1);
+                        state.bitkind = Some(logikind);
+                    }
+                    state.tail_found = !do_spawn_head;
+                    (sprite, logikind, gate_common_components)
+                };
+            match c {
+                'A' => {
+                    commands.spawn(get_logigate((0, 1), LogiKind::And));
+                }
+                'O' => {
+                    commands.spawn(get_logigate((0, 2), LogiKind::Or));
                 }
                 'N' => {
-                    commands.spawn((
-                        Sprite::from_atlas_image(
-                            tile_set_image,
-                            TextureAtlas {
-                                layout: layout_handle,
-                                index: 16 * 3,
-                            },
-                        ),
-                        Transform::from_xyz(0., 0., 0.),
-                        coords,
-                        Tiles,
-                        LogiKind::Not,
-                        LogiGate,
-                        TileAdjust,
-                    ));
+                    commands.spawn(get_logigate((0, 3), LogiKind::Not));
+                }
+                'X' => {
+                    commands.spawn(get_logigate((0, 4), LogiKind::Xor));
                 }
                 'W' => {
                     commands.spawn((
@@ -152,36 +182,16 @@ fn chars_into_tiles(
                 }
                 '0' => {
                     commands.spawn((
-                        Sprite::from_atlas_image(
-                            tile_set_image,
-                            TextureAtlas {
-                                layout: layout_handle,
-                                index: 0,
-                            },
-                        ),
-                        Transform::from_xyz(0., 0., 0.),
+                        from_index(1, 0),
                         Bit { boolean: false },
-                        Tiles,
-                        LogiGate,
-                        TileAdjust,
-                        coords,
+                        bit_common_components,
                     ));
                 }
                 '1' => {
                     commands.spawn((
-                        Sprite::from_atlas_image(
-                            tile_set_image,
-                            TextureAtlas {
-                                layout: layout_handle,
-                                index: 1,
-                            },
-                        ),
-                        Transform::from_xyz(0., 0., 0.),
+                        from_index(0, 0),
                         Bit { boolean: true },
-                        Tiles,
-                        LogiGate,
-                        TileAdjust,
-                        coords,
+                        bit_common_components,
                     ));
                 }
                 _ => (),
