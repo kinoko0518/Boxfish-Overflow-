@@ -2,11 +2,11 @@ use bevy::prelude::*;
 
 use crate::{
     Bit, TileCoords,
+    aquarium::LogiKind,
     boxfish::{
         BitIter, Head, Player,
         movement::{OnMoved, collide_with},
     },
-    tile::LogiKind,
 };
 
 pub fn register_system(

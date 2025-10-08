@@ -3,16 +3,16 @@
     windows_subsystem = "windows"
 )]
 
+mod aquarium;
 mod boid;
 mod boxfish;
 mod styling;
-mod tile;
 
 use bevy::prelude::*;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
 use boxfish::PlayerPlugin;
 
-use crate::{boid::BoidPlugin, styling::StylingPlugin};
+use crate::{aquarium::AquariumPlugin, boid::BoidPlugin, styling::StylingPlugin};
 
 const TILE_SIZE: usize = 16;
 
@@ -33,6 +33,6 @@ fn main() {
         .add_plugins(StylingPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(BoidPlugin)
-        .add_systems(Startup, (tile::parse_aquarium, tile::tile_adjust).chain())
+        .add_plugins(AquariumPlugin)
         .run();
 }

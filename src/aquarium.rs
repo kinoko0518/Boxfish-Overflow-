@@ -1,6 +1,21 @@
 use crate::{Bit, TILE_SIZE, TileCoords};
 use bevy::prelude::*;
 
+pub struct AquariumPlugin;
+
+impl Plugin for AquariumPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<ConstructAquarium>()
+            .add_systems(Startup, setup_aquarium)
+            .add_systems(Startup, call_default_aquarium)
+            .add_systems(Update, tile_adjust)
+            .add_systems(Update, parse_aquarium);
+    }
+}
+
+#[derive(Component)]
+pub struct Tiles;
+
 #[derive(Component)]
 pub struct Collidable;
 
@@ -18,27 +33,69 @@ pub enum LogiKind {
     Xor,
 }
 
-const PARSE_TARGET: &str = "
-WWWWWWWWWWWWWW
-W            W
-W            W
-W            W
-W            W
-WA00111010111W
-";
+#[derive(Event)]
+pub struct ConstructAquarium {
+    pub content: String,
+    pub player_origin: IVec2,
+    pub player_defaultbits: Vec<bool>,
+}
+
+impl ConstructAquarium {
+    pub fn test_stage() -> Self {
+        Self {
+            content: "
+WWWWWWWWWWWW
+W    WWG11GW
+W          W
+W  O0110O  W
+W          W
+W          W
+WWWWWWWWWWWW
+            "
+            .into(),
+            player_origin: IVec2::new(4, 6),
+            player_defaultbits: vec![true, true],
+        }
+    }
+}
+
 const WALL_TILESET: &str = "embedded://tile/wall.png";
 const LOGIGATE_TILESET: &str = "embedded://tile/logical_gates.png";
+const AQUARIUM_PATH: &str = "embedded://background/aquarium.png";
+
+pub fn setup_aquarium(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn(Sprite {
+        image: asset_server.load(AQUARIUM_PATH),
+        ..default()
+    });
+}
+
+pub fn call_default_aquarium(mut construct_aquarium: EventWriter<ConstructAquarium>) {
+    construct_aquarium.write(ConstructAquarium::test_stage());
+}
 
 pub fn parse_aquarium(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    old_tiles: Query<Entity, With<Tiles>>,
+    mut on_loaded: EventReader<ConstructAquarium>,
+) {
+    if let Some(aq) = on_loaded.read().next() {
+        for t in old_tiles {
+            commands.entity(t).despawn();
+        }
+        chars_into_tiles(&aq.content, commands, asset_server, texture_atlas_layouts);
+    }
+}
+
+fn chars_into_tiles(
+    aquarium: &str,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    commands.spawn(Sprite {
-        image: asset_server.load("embedded://background/aquarium.png"),
-        ..default()
-    });
-    for (y, s) in PARSE_TARGET.lines().rev().enumerate() {
+    for (y, s) in aquarium.lines().rev().enumerate() {
         for (x, c) in s.chars().enumerate() {
             let tile_set_image: Handle<Image> = asset_server.load(LOGIGATE_TILESET);
             let tile_layout = TextureAtlasLayout::from_grid(UVec2::new(16, 16), 16, 16, None, None);
@@ -60,6 +117,7 @@ pub fn parse_aquarium(
                         ),
                         Transform::from_xyz(0., 0., 0.),
                         coords,
+                        Tiles,
                         LogiKind::And,
                         LogiGate,
                         TileAdjust,
@@ -76,6 +134,7 @@ pub fn parse_aquarium(
                         ),
                         Transform::from_xyz(0., 0., 0.),
                         coords,
+                        Tiles,
                         LogiKind::Not,
                         LogiGate,
                         TileAdjust,
@@ -85,6 +144,7 @@ pub fn parse_aquarium(
                     commands.spawn((
                         Sprite::from_image(asset_server.load(WALL_TILESET)),
                         Transform::from_xyz(0., 0., 0.),
+                        Tiles,
                         Collidable,
                         TileAdjust,
                         coords,
@@ -101,6 +161,7 @@ pub fn parse_aquarium(
                         ),
                         Transform::from_xyz(0., 0., 0.),
                         Bit { boolean: false },
+                        Tiles,
                         LogiGate,
                         TileAdjust,
                         coords,
@@ -117,6 +178,7 @@ pub fn parse_aquarium(
                         ),
                         Transform::from_xyz(0., 0., 0.),
                         Bit { boolean: true },
+                        Tiles,
                         LogiGate,
                         TileAdjust,
                         coords,
@@ -128,7 +190,7 @@ pub fn parse_aquarium(
     }
 }
 
-pub fn tile_adjust(mut query: Query<(&TileCoords, &mut Transform), With<TileAdjust>>) {
+pub fn tile_adjust(mut query: Query<(&TileCoords, &mut Transform), Changed<TileAdjust>>) {
     for (t_coords, mut transform) in &mut query {
         let t_pos = t_coords.tile_pos;
         transform.translation = Vec3::new(

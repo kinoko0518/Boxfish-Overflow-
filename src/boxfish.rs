@@ -6,7 +6,8 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<movement::OnMoved>()
-            .add_systems(Startup, boxfish_setup)
+            .add_systems(Startup, aquarium_setup)
+            .add_systems(Update, update_bits)
             .add_systems(Update, bit_visualise)
             .add_systems(Update, body_system)
             .add_systems(Update, face_system)
@@ -15,7 +16,10 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-use crate::{Bit, TILE_SIZE, TileCoords, tile::Collidable};
+use crate::{
+    Bit, TILE_SIZE, TileCoords,
+    aquarium::{Collidable, ConstructAquarium},
+};
 use bevy::prelude::*;
 
 // Resources
@@ -52,53 +56,101 @@ pub struct BitIter {
 #[derive(Component)]
 struct Tail;
 
+impl Tail {
+    fn get_position_on_the_length(bit_length: usize) -> Vec3 {
+        Vec3::new(-(((bit_length + 1) * TILE_SIZE) as f32), 0., 0.)
+    }
+}
+
 #[derive(Component)]
 pub struct Head;
 
 #[derive(Component)]
 pub struct Player;
 
-fn boxfish_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands
-        .spawn((
-            Sprite::from_image(asset_server.load(HEAD_PATH)),
-            Transform::from_xyz(0., 0., 0.),
-            FaceState::Normal,
-            Head,
-            Player,
-            TileCoords {
-                tile_pos: IVec2::new(0, 0),
-            },
-        ))
-        .with_children(|parent| {
-            const BIT_LENGTH: usize = 4;
-            for iter in 0..BIT_LENGTH {
-                parent
-                    .spawn((
-                        Sprite::from_image(asset_server.load(BODY_PATH)),
-                        Transform::from_xyz(0., 0., 0.),
-                        Body { expanding: false },
-                        BitIter { pos: iter },
-                        Player,
-                    ))
-                    .with_child((
-                        Sprite::from_image(asset_server.load(ZERO_PATH)),
-                        Transform::from_xyz(0., 0., 0.),
-                        Bit { boolean: false },
-                        BitIter { pos: iter },
-                        Player,
-                    ));
-            }
-            parent.spawn((
-                Sprite::from_image(asset_server.load(TAIL_PATH)),
-                Transform::from_xyz(-(((BIT_LENGTH + 1) * TILE_SIZE) as f32), 0., 0.),
-                Body { expanding: false },
-                BitIter { pos: BIT_LENGTH },
-                Tail,
-                Player,
-            ));
-        });
+fn aquarium_setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut event_writer: EventWriter<ConstructAquarium>,
+) {
+    commands.spawn((
+        Sprite::from_image(asset_server.load(HEAD_PATH)),
+        Transform::from_xyz(0., 0., 10.),
+        FaceState::Normal,
+        Head,
+        Player,
+        TileCoords {
+            tile_pos: IVec2::new(0, 0),
+        },
+    ));
     commands.spawn(Camera2d);
+    event_writer.write(ConstructAquarium::test_stage());
+}
+
+fn update_bits(
+    mut head_query: Query<(Entity, Option<&Children>, &mut Transform, &mut TileCoords), With<Head>>,
+    mut construct_aquarium: EventReader<ConstructAquarium>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+) {
+    // ステージを読み込み
+    let aquarium = match construct_aquarium.read().next() {
+        Some(aq) => aq,
+        None => return,
+    };
+    // ハコフグくんの頭を取得
+    let mut head = match head_query.single_mut() {
+        Ok(h) => h,
+        Err(_) => panic!("The head of the boxfish not found"),
+    };
+    // 座標を更新
+    head.3.tile_pos = aquarium.player_origin;
+    head.2.translation = (aquarium.player_origin.as_vec2() * (TILE_SIZE as f32)).extend(10.);
+
+    // 古いビットとしっぽを削除
+    if let Some(children) = head.1 {
+        for child in children {
+            commands.entity(*child).despawn();
+        }
+    }
+    // 新しいビットを生成、idを取得してVec<Entity>にする
+    let bits = {
+        let mut ids = vec![];
+        for (iter, bit) in aquarium.player_defaultbits.iter().enumerate() {
+            let id = commands
+                .spawn((
+                    Sprite::from_image(asset_server.load(BODY_PATH)),
+                    Transform::from_xyz(0., 0., 10.),
+                    Body { expanding: false },
+                    BitIter { pos: iter },
+                    Player,
+                ))
+                .with_child((
+                    Sprite::from_image(asset_server.load(ZERO_PATH)),
+                    Transform::from_xyz(0., 0., 10.),
+                    Bit { boolean: *bit },
+                    BitIter { pos: iter },
+                    Player,
+                ))
+                .id();
+            ids.push(id);
+        }
+        ids
+    };
+    // 生成されたビットのIDをもとにハコフグの頭の子にする
+    let mut head_command = commands.entity(head.0);
+    head_command.add_children(&bits);
+
+    // しっぽを追加
+    let body_length = aquarium.player_defaultbits.len();
+    head_command.with_child((
+        Sprite::from_image(asset_server.load(TAIL_PATH)),
+        Transform::from_translation(Tail::get_position_on_the_length(body_length)),
+        Body { expanding: false },
+        BitIter { pos: body_length },
+        Tail,
+        Player,
+    ));
 }
 
 fn bit_visualise(
