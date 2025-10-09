@@ -25,27 +25,34 @@ pub fn bit_visualise(
 
 pub fn register_system(
     mut on_moved: EventReader<OnMoved>,
-    head_query: Query<&TileCoords, With<Head>>,
     mut queries: ParamSet<(
-        Query<(&TileCoords, &Bit, &LogiKind)>,
+        Query<&TileCoords, With<Player>>,
+        Query<(&TileCoords, &Bit, &LogiKind, Entity)>,
+        Query<&mut TileCoords, With<Head>>,
         Query<(&BitIter, &mut Bit), With<Player>>,
     )>,
 ) {
-    let head = if let Ok(head) = head_query.single() {
-        head
+    let head = if let Ok(head) = queries.p0().single() {
+        head.tile_pos
     } else {
         println!("WARN: The head of the boxfish not found");
         return;
     };
     for moved in on_moved.read() {
+        // 処理終了後に移動する座標、ゲート以外では移動処理は行われないためNone
+        let mut coords_after_process: Option<IVec2> = None;
+        // 移動量
         let travel = moved.travel.clone();
+        // ゲートの情報を使いやすい形で保存しておく
         let gates: Vec<(IVec2, bool, LogiKind)> = queries
-            .p0()
+            .p1()
             .iter()
             .map(|g| (g.0.tile_pos, g.1.boolean, *g.2))
             .collect();
-        let head_coord_before_move = &head.tile_pos - travel.into_ivec2();
-        for (bit_iter, mut bit) in queries.p1() {
+        // 移動前の頭の位置
+        let head_coord_before_move = &head - travel.into_ivec2();
+
+        for (bit_iter, mut bit) in queries.p3().iter_mut() {
             let local_x_from_head = -(bit_iter.pos as i32) - 1;
             // 注・取得しているのは”移動後”の座標
             // 移動前の座標を逆算し、そこからルート上の座標を求める
@@ -57,10 +64,19 @@ pub fn register_system(
                         LogiKind::Or => bit.boolean |= *gate_bit,
                         LogiKind::Not => bit.boolean = !bit.boolean,
                         LogiKind::Xor => bit.boolean ^= *gate_bit,
-                        LogiKind::Gate => todo!(),
+                        LogiKind::Gate => {
+                            if bit.boolean != *gate_bit {
+                                coords_after_process = Some(head_coord_before_move);
+                            }
+                        }
                     }
                 }
             }
+        }
+        // ゲートと一致しなければ通れないため元の位置に戻す
+        if let (Ok(mut head_mut), Some(coords)) = (queries.p2().single_mut(), coords_after_process)
+        {
+            head_mut.tile_pos = coords;
         }
     }
 }

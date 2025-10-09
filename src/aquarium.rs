@@ -46,12 +46,15 @@ impl ConstructAquarium {
         Self {
             content: "
 WWWWWWWWWWWW
-W    WWN11NW
-W          W
-W  O0110O  W
 W          W
 W          W
-WWWWWWWWWWWW
+W  N0110N  W
+W          W
+W          W
+WWWWWWWG11GW
+      W    W
+      W    W
+      WWWWWW
             "
             .into(),
             player_origin: IVec2::new(4, 6),
@@ -172,6 +175,9 @@ fn chars_into_tiles(
                 }
                 'X' => {
                     commands.spawn(get_logigate((0, 4), LogiKind::Xor));
+                }
+                'G' => {
+                    commands.spawn(get_logigate((2, 0), LogiKind::Gate));
                 }
                 'W' => {
                     commands.spawn((
