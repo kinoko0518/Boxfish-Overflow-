@@ -25,12 +25,13 @@ pub struct LogiGate;
 #[derive(Component)]
 pub struct TileAdjust;
 
-#[derive(Component, Clone, Copy, PartialEq, Eq)]
+#[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum LogiKind {
     And,
     Or,
     Not,
     Xor,
+    Gate,
 }
 
 #[derive(Event)]
@@ -45,16 +46,16 @@ impl ConstructAquarium {
         Self {
             content: "
 WWWWWWWWWWWW
-W    WWG11GW
+W    WWN11NW
 W          W
-W  A0110A  W
+W  O0110O  W
 W          W
 W          W
 WWWWWWWWWWWW
             "
             .into(),
             player_origin: IVec2::new(4, 6),
-            player_defaultbits: vec![true, true],
+            player_defaultbits: vec![false, false],
         }
     }
 }
@@ -157,6 +158,8 @@ fn chars_into_tiles(
                     state.tail_found = !do_spawn_head;
                     (sprite, logikind, gate_common_components)
                 };
+            const LOGIKIND_UNDEFINED: &str =
+                "Parse Error: Expected a logigate's tail before any boolean";
             match c {
                 'A' => {
                     commands.spawn(get_logigate((0, 1), LogiKind::And));
@@ -185,6 +188,7 @@ fn chars_into_tiles(
                         from_index(1, 0),
                         Bit { boolean: false },
                         bit_common_components,
+                        state.bitkind.expect(LOGIKIND_UNDEFINED),
                     ));
                 }
                 '1' => {
@@ -192,6 +196,7 @@ fn chars_into_tiles(
                         from_index(0, 0),
                         Bit { boolean: true },
                         bit_common_components,
+                        state.bitkind.expect(LOGIKIND_UNDEFINED),
                     ));
                 }
                 _ => (),

@@ -1,18 +1,20 @@
 use crate::boxfish::{BitIter, Body, Collidable, Head, TILE_SIZE, TileCoords};
 use bevy::prelude::*;
 
+#[derive(Clone)]
 pub struct Travel {
     direction: Direction,
     amount: i32,
 }
 
+#[derive(Clone)]
 enum Direction {
     X,
     Y,
 }
 
 impl Travel {
-    fn into_ivec2(&self) -> IVec2 {
+    pub fn into_ivec2(&self) -> IVec2 {
         match &self.direction {
             &Direction::X => IVec2::new(self.amount, 0),
             &Direction::Y => IVec2::new(0, self.amount),

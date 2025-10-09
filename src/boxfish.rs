@@ -1,21 +1,6 @@
 pub mod movement;
 pub mod register;
 
-pub struct PlayerPlugin;
-
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_event::<movement::OnMoved>()
-            .add_systems(Startup, aquarium_setup)
-            .add_systems(Update, update_bits)
-            .add_systems(Update, bit_visualise)
-            .add_systems(Update, body_system)
-            .add_systems(Update, face_system)
-            .add_systems(Update, register::register_system)
-            .add_systems(Update, movement::boxfish_moving);
-    }
-}
-
 use crate::{
     Bit, TILE_SIZE, TileCoords,
     aquarium::{Collidable, ConstructAquarium},
@@ -35,6 +20,27 @@ const ONE_PATH: &str = "embedded://boxfish/1.png";
 
 // Coefficients
 const SHRINK_PER_TILE: f32 = 0.05;
+
+pub struct PlayerPlugin;
+
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<movement::OnMoved>()
+            .add_systems(Startup, aquarium_setup)
+            .add_systems(Update, update_bits)
+            .add_systems(Update, body_system)
+            .add_systems(Update, face_system)
+            .add_systems(
+                Update,
+                (
+                    movement::boxfish_moving,
+                    register::register_system,
+                    register::bit_visualise,
+                )
+                    .chain(),
+            );
+    }
+}
 
 #[derive(Component)]
 pub enum FaceState {
@@ -154,20 +160,6 @@ fn update_bits(
         Tail,
         Player,
     ));
-}
-
-/// プレイヤーのレジスタの見た目を真理値に合わせて更新
-fn bit_visualise(
-    mut query: Query<(&mut Sprite, &Bit), With<Player>>,
-    asset_server: Res<AssetServer>,
-) {
-    for (mut sprite, bit) in &mut query {
-        if bit.boolean {
-            sprite.image = asset_server.load(ONE_PATH)
-        } else {
-            sprite.image = asset_server.load(ZERO_PATH)
-        }
-    }
 }
 
 /// ハコフグくんの伸縮をコントール
