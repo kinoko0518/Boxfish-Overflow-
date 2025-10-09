@@ -33,7 +33,6 @@ pub struct StylingPlugin;
 
 impl Plugin for StylingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, set_window_icon)
-            .insert_resource(ClearColor(Color::linear_rgb(0.0, 0.0, 0.0)));
+        app.add_systems(Startup, set_window_icon);
     }
 }

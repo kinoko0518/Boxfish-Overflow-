@@ -7,7 +7,6 @@ pub struct AquariumPlugin;
 impl Plugin for AquariumPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ConstructAquarium>()
-            .add_systems(Startup, setup_aquarium)
             .add_systems(Startup, call_default_aquarium)
             .add_systems(Update, tile_adjust)
             .add_systems(Update, highlight_incorrect_bits)
@@ -81,13 +80,6 @@ WWWWWWWG11GW
 const WALL_TILESET: &str = "embedded://tile/wall.png";
 const LOGIGATE_TILESET: &str = "embedded://tile/logical_gates.png";
 const AQUARIUM_PATH: &str = "embedded://background/aquarium.png";
-
-pub fn setup_aquarium(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Sprite {
-        image: asset_server.load(AQUARIUM_PATH),
-        ..default()
-    });
-}
 
 pub fn call_default_aquarium(mut construct_aquarium: EventWriter<ConstructAquarium>) {
     construct_aquarium.write(ConstructAquarium::test_stage());
