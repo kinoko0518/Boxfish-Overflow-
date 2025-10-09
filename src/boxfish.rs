@@ -30,6 +30,8 @@ impl Plugin for PlayerPlugin {
             .add_systems(Startup, aquarium_setup)
             .add_systems(Update, update_bits)
             .add_systems(Update, body_system)
+            .add_systems(Update, movement::collided_animation)
+            .add_systems(Update, register::hightlight_collided_gate)
             .add_systems(Update, face_system)
             .add_systems(
                 Update,
@@ -37,7 +39,6 @@ impl Plugin for PlayerPlugin {
                     movement::boxfish_moving,
                     register::register_system,
                     register::bit_visualise,
-                    register::hightlight_collided_gate,
                 )
                     .chain(),
             );

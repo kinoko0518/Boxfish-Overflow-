@@ -31,7 +31,7 @@ pub struct LogiGate;
 /// エンティティを識別するコンポーネント
 pub struct TileAdjust;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 /// ゲートのうち、プレイヤーと接触したときに異なるビットだった、
 /// すなわち条件が満たされていないビットを赤くハイライトするためのコンポーネント
 /// remainingは自然に減少し、255であるときに完全に赤くなる。
@@ -87,6 +87,7 @@ pub fn call_default_aquarium(mut construct_aquarium: EventWriter<ConstructAquari
 
 pub fn highlight_incorrect_bits(query: Query<(&mut Sprite, &mut IncorrectBit), With<Bit>>) {
     for (mut sprite, mut incorrect_bit) in query {
+        println!("{:?}", incorrect_bit);
         let not_red = 255 - incorrect_bit.remaining;
         sprite.color = Color::srgb_u8(255, not_red, not_red);
         incorrect_bit.remaining = std::cmp::max((incorrect_bit.remaining as i32) - 3, 0) as u8;

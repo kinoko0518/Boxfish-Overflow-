@@ -21,6 +21,12 @@ pub struct TileCoords {
     tile_pos: IVec2,
 }
 
+impl TileCoords {
+    pub fn into_vec2(&self) -> Vec2 {
+        (self.tile_pos * (TILE_SIZE as i32)).as_vec2()
+    }
+}
+
 #[derive(Component)]
 pub struct Bit {
     boolean: bool,

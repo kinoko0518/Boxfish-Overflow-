@@ -1,4 +1,6 @@
-use crate::boxfish::{BitIter, Body, Collidable, Head, TILE_SIZE, TileCoords};
+use std::f32::consts::PI;
+
+use crate::boxfish::{BitIter, Body, Collidable, FaceState, Head, TILE_SIZE, TileCoords};
 use bevy::prelude::*;
 
 #[derive(Clone)]
@@ -40,12 +42,22 @@ pub struct OnMoved {
     pub travel: Travel,
 }
 
+#[derive(Component)]
+pub struct PlayerCollidedAnimation {
+    travel: Travel,
+    progress: f32,
+}
+
 const SECONDS_PER_TILE: f32 = 0.2;
 
 pub fn boxfish_moving(
+    mut commands: Commands,
     time: Res<Time>,
     mut queries: ParamSet<(
-        Query<(&mut Transform, &mut TileCoords), With<Head>>,
+        Query<
+            (&mut Transform, &mut TileCoords, Entity, &mut FaceState),
+            (With<Head>, Without<PlayerCollidedAnimation>),
+        >,
         Query<&TileCoords, With<Collidable>>,
     )>,
     mut on_moved: EventWriter<OnMoved>,
@@ -58,7 +70,7 @@ pub fn boxfish_moving(
         .map(|(body, bit_iter)| 1 + if body.expanding { bit_iter.pos } else { 1 })
         .max()
         .unwrap_or(1);
-    if let Ok((mut transform, mut tile)) = queries.p0().single_mut() {
+    if let Ok((mut transform, mut tile, entity, mut face_state)) = queries.p0().single_mut() {
         let target_pos = Vec2::new(
             (tile.tile_pos.x * (TILE_SIZE as i32)) as f32,
             (tile.tile_pos.y * (TILE_SIZE as i32)) as f32,
@@ -84,6 +96,12 @@ pub fn boxfish_moving(
                 if !was_collided {
                     tile.tile_pos += direction.into_ivec2();
                     on_moved.write(OnMoved { travel: direction });
+                } else {
+                    commands.entity(entity).insert(PlayerCollidedAnimation {
+                        progress: 0.,
+                        travel: direction,
+                    });
+                    *face_state = FaceState::Surplising;
                 }
             }
         } else {
@@ -99,6 +117,36 @@ pub fn boxfish_moving(
             } else {
                 transform.translation += Vec3::new(travel_in_frame.x, travel_in_frame.y, 0.0);
             }
+        }
+    }
+}
+
+/// プレイヤーの衝突アニメーション
+pub fn collided_animation(
+    mut commands: Commands,
+    mut query: Query<
+        (
+            &mut FaceState,
+            &mut Transform,
+            &mut PlayerCollidedAnimation,
+            &TileCoords,
+            Entity,
+        ),
+        With<Head>,
+    >,
+) {
+    if let Ok((mut face_state, mut transform, mut collided_anim, tcoords, entity)) =
+        query.single_mut()
+    {
+        let halfed_travel = collided_anim.travel.into_ivec2().as_vec2() / 2.0 * (TILE_SIZE as f32);
+        let anim = halfed_travel * collided_anim.progress.sin();
+        transform.translation = (tcoords.into_vec2() + anim).extend(0.);
+
+        if collided_anim.progress > PI {
+            commands.entity(entity).remove::<PlayerCollidedAnimation>();
+            *face_state = FaceState::Normal;
+        } else {
+            collided_anim.progress += 0.1;
         }
     }
 }
