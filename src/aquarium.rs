@@ -1,5 +1,6 @@
 use crate::{Bit, TILE_SIZE, TileCoords};
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 pub struct AquariumPlugin;
 
@@ -9,21 +10,35 @@ impl Plugin for AquariumPlugin {
             .add_systems(Startup, setup_aquarium)
             .add_systems(Startup, call_default_aquarium)
             .add_systems(Update, tile_adjust)
+            .add_systems(Update, highlight_incorrect_bits)
             .add_systems(Update, parse_aquarium);
     }
 }
 
 #[derive(Component)]
+/// アクアリウム上のタイルを識別するコンポーネント
 pub struct Tiles;
 
 #[derive(Component)]
+/// プレイヤーが衝突するタイルを識別するコンポーネント
 pub struct Collidable;
 
 #[derive(Component)]
+/// 論理ゲートを識別するコンポーネント
 pub struct LogiGate;
 
 #[derive(Component)]
+/// TileCoordsを持つコンポーネントのうち、位置合わせを必要とする
+/// エンティティを識別するコンポーネント
 pub struct TileAdjust;
+
+#[derive(Component)]
+/// ゲートのうち、プレイヤーと接触したときに異なるビットだった、
+/// すなわち条件が満たされていないビットを赤くハイライトするためのコンポーネント
+/// remainingは自然に減少し、255であるときに完全に赤くなる。
+pub struct IncorrectBit {
+    pub remaining: u8,
+}
 
 #[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum LogiKind {
@@ -34,7 +49,7 @@ pub enum LogiKind {
     Gate,
 }
 
-#[derive(Event)]
+#[derive(Event, Serialize, Deserialize)]
 pub struct ConstructAquarium {
     pub content: String,
     pub player_origin: IVec2,
@@ -52,9 +67,9 @@ W  N0110N  W
 W          W
 W          W
 WWWWWWWG11GW
-      W    W
-      W    W
-      WWWWWW
+     W     W
+     W     W
+     WWWWWWW
             "
             .into(),
             player_origin: IVec2::new(4, 6),
@@ -76,6 +91,14 @@ pub fn setup_aquarium(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 pub fn call_default_aquarium(mut construct_aquarium: EventWriter<ConstructAquarium>) {
     construct_aquarium.write(ConstructAquarium::test_stage());
+}
+
+pub fn highlight_incorrect_bits(query: Query<(&mut Sprite, &mut IncorrectBit), With<Bit>>) {
+    for (mut sprite, mut incorrect_bit) in query {
+        let not_red = 255 - incorrect_bit.remaining;
+        sprite.color = Color::srgb_u8(255, not_red, not_red);
+        incorrect_bit.remaining = std::cmp::max((incorrect_bit.remaining as i32) - 3, 0) as u8;
+    }
 }
 
 pub fn parse_aquarium(
@@ -126,6 +149,7 @@ fn chars_into_tiles(
                 Tiles,
                 LogiGate,
                 TileAdjust,
+                IncorrectBit { remaining: 0 },
                 coords.clone(),
             );
             let from_index = |x: usize, y: usize| -> Sprite {

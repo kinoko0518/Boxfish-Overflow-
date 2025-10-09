@@ -2,12 +2,17 @@ use bevy::prelude::*;
 
 use crate::{
     Bit, TileCoords,
-    aquarium::LogiKind,
+    aquarium::{IncorrectBit, LogiKind},
     boxfish::{
         BitIter, Head, ONE_PATH, Player, ZERO_PATH,
         movement::{OnMoved, collide_with},
     },
 };
+
+#[derive(Event)]
+pub struct GateCollidedAt {
+    collided_at: IVec2,
+}
 
 /// プレイヤーのレジスタの見た目を真理値に合わせて更新
 pub fn bit_visualise(
@@ -27,10 +32,11 @@ pub fn register_system(
     mut on_moved: EventReader<OnMoved>,
     mut queries: ParamSet<(
         Query<&TileCoords, With<Player>>,
-        Query<(&TileCoords, &Bit, &LogiKind, Entity)>,
+        Query<(&TileCoords, &Bit, &LogiKind)>,
         Query<&mut TileCoords, With<Head>>,
         Query<(&BitIter, &mut Bit), With<Player>>,
     )>,
+    mut gate_collided_at_writer: EventWriter<GateCollidedAt>,
 ) {
     let head = if let Ok(head) = queries.p0().single() {
         head.tile_pos
@@ -67,6 +73,9 @@ pub fn register_system(
                         LogiKind::Gate => {
                             if bit.boolean != *gate_bit {
                                 coords_after_process = Some(head_coord_before_move);
+                                gate_collided_at_writer.write(GateCollidedAt {
+                                    collided_at: *gate_coords,
+                                });
                             }
                         }
                     }
@@ -77,6 +86,20 @@ pub fn register_system(
         if let (Ok(mut head_mut), Some(coords)) = (queries.p2().single_mut(), coords_after_process)
         {
             head_mut.tile_pos = coords;
+        }
+    }
+}
+
+pub fn hightlight_collided_gate(
+    mut event_reader: EventReader<GateCollidedAt>,
+    mut query: Query<(&mut IncorrectBit, &TileCoords)>,
+) {
+    for event in event_reader.read() {
+        for mut target_tile in query
+            .iter_mut()
+            .filter(|q| q.1.tile_pos == event.collided_at)
+        {
+            target_tile.0.remaining = 255;
         }
     }
 }

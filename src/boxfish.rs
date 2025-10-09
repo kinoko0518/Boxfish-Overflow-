@@ -26,6 +26,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<movement::OnMoved>()
+            .add_event::<register::GateCollidedAt>()
             .add_systems(Startup, aquarium_setup)
             .add_systems(Update, update_bits)
             .add_systems(Update, body_system)
@@ -36,6 +37,7 @@ impl Plugin for PlayerPlugin {
                     movement::boxfish_moving,
                     register::register_system,
                     register::bit_visualise,
+                    register::hightlight_collided_gate,
                 )
                     .chain(),
             );

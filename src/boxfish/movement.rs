@@ -103,11 +103,13 @@ pub fn boxfish_moving(
     }
 }
 
-pub fn do_collide(original: &IVec2, travel: &Travel, target: &[IVec2]) -> bool {
-    target.iter().any(|t| collide_with(original, travel, t))
-}
+/// 単一の対象に対して衝突判定を行う
 pub fn collide_with(original: &IVec2, travel: &Travel, target: &IVec2) -> bool {
     travel.get_route(*original).contains(target)
+}
+/// 複数の対象に対して衝突判定を行う
+pub fn do_collide(original: &IVec2, travel: &Travel, target: &[IVec2]) -> bool {
+    target.iter().any(|t| collide_with(original, travel, t))
 }
 
 fn player_input(keyboard_input: &Res<ButtonInput<KeyCode>>) -> Travel {
