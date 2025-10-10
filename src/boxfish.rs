@@ -9,15 +9,8 @@ use crate::{
 use bevy::prelude::*;
 
 // Resources
-const HEAD_PATH: &str = "embedded://boxfish/head.png";
-const EXPANDING_PATH: &str = "embedded://boxfish/head_expanding.png";
-const SURPLIZING_PATH: &str = "embedded://boxfish/head_surplize.png";
-
-const BODY_PATH: &str = "embedded://boxfish/body.png";
-const TAIL_PATH: &str = "embedded://boxfish/tail.png";
-
-const ZERO_PATH: &str = "embedded://boxfish/0.png";
-const ONE_PATH: &str = "embedded://boxfish/1.png";
+const BOXFISH_PATH: &str = "embedded://boxfish/boxfish.png";
+const BOOLEAN_PATH: &str = "embedded://boxfish/0_to_1_to_0.png";
 
 // Coefficients
 const SHRINK_PER_TILE: f32 = 0.05;
@@ -28,12 +21,19 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<movement::OnMoved>()
             .add_event::<register::GateCollidedAt>()
-            .add_systems(Startup, aquarium_setup)
-            .add_systems(Update, update_bits)
-            .add_systems(Update, body_system)
-            .add_systems(Update, face_manager)
-            .add_systems(Update, movement::collided_animation)
-            .add_systems(Update, register::hightlight_collided_gate)
+            .init_resource::<BooleanImage>()
+            .init_resource::<PlayerImage>()
+            .add_systems(Startup, (assets_setup, aquarium_setup).chain())
+            .add_systems(
+                Update,
+                (
+                    update_bits,
+                    body_system,
+                    face_manager,
+                    movement::collided_animation,
+                    register::hightlight_collided_gate,
+                ),
+            )
             .add_systems(
                 Update,
                 (
@@ -71,15 +71,80 @@ pub struct Head {
 #[derive(Component)]
 pub struct Player;
 
+#[derive(Resource, Default)]
+pub struct PlayerImage {
+    image: Handle<Image>,
+    atlas_layout: Handle<TextureAtlasLayout>,
+}
+
+impl PlayerImage {
+    fn from_index(&self, x: usize, y: usize) -> Sprite {
+        Sprite::from_atlas_image(self.image.clone(), self.index_to_atlas(x, y))
+    }
+    fn index_to_atlas(&self, x: usize, y: usize) -> TextureAtlas {
+        TextureAtlas {
+            layout: self.atlas_layout.clone(),
+            index: x + y * 4,
+        }
+    }
+}
+
+#[derive(Resource, Default)]
+pub struct BooleanImage {
+    image: Handle<Image>,
+    atlas_layout: Handle<TextureAtlasLayout>,
+}
+
+impl BooleanImage {
+    fn from_y_to_sprite(&self, y: usize) -> Sprite {
+        Sprite::from_atlas_image(self.image.clone(), self.from_y_to_atlas(y))
+    }
+    fn from_y_to_atlas(&self, y: usize) -> TextureAtlas {
+        TextureAtlas {
+            layout: self.atlas_layout.clone(),
+            index: y,
+        }
+    }
+    fn zero(&self) -> TextureAtlas {
+        self.from_y_to_atlas(0)
+    }
+    fn one(&self) -> TextureAtlas {
+        self.from_y_to_atlas(10)
+    }
+}
+
+pub fn assets_setup(
+    mut player_image: ResMut<PlayerImage>,
+    mut boolean_image: ResMut<BooleanImage>,
+    asset_server: Res<AssetServer>,
+) {
+    player_image.image = asset_server.load(BOXFISH_PATH);
+    player_image.atlas_layout = asset_server.add(TextureAtlasLayout::from_grid(
+        UVec2::new(16, 16),
+        4,
+        4,
+        None,
+        None,
+    ));
+    boolean_image.image = asset_server.load(BOOLEAN_PATH);
+    boolean_image.atlas_layout = asset_server.add(TextureAtlasLayout::from_grid(
+        UVec2::new(16, 16),
+        1,
+        20,
+        None,
+        None,
+    ));
+}
+
 /// ゲーム開始時に一度だけ呼び出され、プレイヤーの頭やカメラなどの
 /// ゲームを通して削除されないものを配置し、最初のステージを読み込む。
 fn aquarium_setup(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut event_writer: EventWriter<ConstructAquarium>,
+    player_image: Res<PlayerImage>,
 ) {
     commands.spawn((
-        Sprite::from_image(asset_server.load(HEAD_PATH)),
+        player_image.from_index(2, 0),
         Transform::from_xyz(0., 0., 10.),
         Head {
             is_expanding: false,
@@ -98,7 +163,8 @@ fn update_bits(
     mut head_query: Query<(Entity, Option<&Children>, &mut Transform, &mut TileCoords), With<Head>>,
     mut construct_aquarium: EventReader<ConstructAquarium>,
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    player_image: Res<PlayerImage>,
+    boolean_image: Res<BooleanImage>,
 ) {
     // ステージを読み込み
     let aquarium = match construct_aquarium.read().next() {
@@ -126,14 +192,14 @@ fn update_bits(
         for (iter, bit) in aquarium.player_defaultbits.iter().enumerate() {
             let id = commands
                 .spawn((
-                    Sprite::from_image(asset_server.load(BODY_PATH)),
+                    player_image.from_index(1, 0),
                     Transform::from_xyz(0., 0., 10.),
                     Body,
                     BitIter { pos: iter },
                     Player,
                 ))
                 .with_child((
-                    Sprite::from_image(asset_server.load(ZERO_PATH)),
+                    boolean_image.from_y_to_sprite(0),
                     Transform::from_xyz(0., 0., 10.),
                     Bit { boolean: *bit },
                     BitIter { pos: iter },
@@ -151,7 +217,7 @@ fn update_bits(
     // しっぽを追加
     let body_length = aquarium.player_defaultbits.len();
     head_command.with_child((
-        Sprite::from_image(asset_server.load(TAIL_PATH)),
+        player_image.from_index(0, 0),
         Transform::from_translation(Tail::get_position_on_the_length(body_length)),
         Body,
         BitIter { pos: body_length },
@@ -207,18 +273,21 @@ fn body_system(
 
 fn face_manager(
     mut query: Query<(&mut Sprite, Option<&PlayerCollidedAnimation>, &Head)>,
-    asset_server: Res<AssetServer>,
+    player_image: Res<PlayerImage>,
 ) {
     if let Ok((mut sprite, col_anim, head)) = query.single_mut() {
-        sprite.image = asset_server.load(match col_anim {
-            Some(_) => SURPLIZING_PATH,
-            None => {
-                if head.is_expanding {
-                    EXPANDING_PATH
-                } else {
-                    HEAD_PATH
+        sprite.texture_atlas = Some(player_image.index_to_atlas(
+            2,
+            match col_anim {
+                Some(_) => 2,
+                None => {
+                    if head.is_expanding {
+                        1
+                    } else {
+                        0
+                    }
                 }
-            }
-        });
+            },
+        ));
     }
 }

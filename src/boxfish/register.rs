@@ -4,7 +4,7 @@ use crate::{
     Bit, TileCoords,
     aquarium::{IncorrectBit, LogiKind},
     boxfish::{
-        BitIter, Head, ONE_PATH, Player, ZERO_PATH,
+        BitIter, BooleanImage, Head, Player,
         movement::{OnMoved, collide_with},
     },
 };
@@ -17,14 +17,14 @@ pub struct GateCollidedAt {
 /// プレイヤーのレジスタの見た目を真理値に合わせて更新
 pub fn bit_visualise(
     mut query: Query<(&mut Sprite, &Bit), With<Player>>,
-    asset_server: Res<AssetServer>,
+    boolean_image: Res<BooleanImage>,
 ) {
     for (mut sprite, bit) in &mut query {
-        if bit.boolean {
-            sprite.image = asset_server.load(ONE_PATH)
+        sprite.texture_atlas = Some(if bit.boolean {
+            boolean_image.one()
         } else {
-            sprite.image = asset_server.load(ZERO_PATH)
-        }
+            boolean_image.zero()
+        })
     }
 }
 
