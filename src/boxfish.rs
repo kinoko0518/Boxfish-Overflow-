@@ -4,6 +4,7 @@ pub mod register;
 use crate::{
     Bit, TILE_SIZE, TileCoords,
     aquarium::{Collidable, ConstructAquarium},
+    boxfish::movement::PlayerCollidedAnimation,
 };
 use bevy::prelude::*;
 
@@ -30,9 +31,9 @@ impl Plugin for PlayerPlugin {
             .add_systems(Startup, aquarium_setup)
             .add_systems(Update, update_bits)
             .add_systems(Update, body_system)
+            .add_systems(Update, face_manager)
             .add_systems(Update, movement::collided_animation)
             .add_systems(Update, register::hightlight_collided_gate)
-            .add_systems(Update, face_system)
             .add_systems(
                 Update,
                 (
@@ -46,16 +47,7 @@ impl Plugin for PlayerPlugin {
 }
 
 #[derive(Component)]
-pub enum FaceState {
-    Normal,
-    Expanding,
-    Surplising,
-}
-
-#[derive(Component)]
-pub struct Body {
-    expanding: bool,
-}
+pub struct Body;
 
 #[derive(Component)]
 pub struct BitIter {
@@ -72,7 +64,9 @@ impl Tail {
 }
 
 #[derive(Component)]
-pub struct Head;
+pub struct Head {
+    is_expanding: bool,
+}
 
 #[derive(Component)]
 pub struct Player;
@@ -87,8 +81,9 @@ fn aquarium_setup(
     commands.spawn((
         Sprite::from_image(asset_server.load(HEAD_PATH)),
         Transform::from_xyz(0., 0., 10.),
-        FaceState::Normal,
-        Head,
+        Head {
+            is_expanding: false,
+        },
         Player,
         TileCoords {
             tile_pos: IVec2::new(0, 0),
@@ -133,7 +128,7 @@ fn update_bits(
                 .spawn((
                     Sprite::from_image(asset_server.load(BODY_PATH)),
                     Transform::from_xyz(0., 0., 10.),
-                    Body { expanding: false },
+                    Body,
                     BitIter { pos: iter },
                     Player,
                 ))
@@ -158,7 +153,7 @@ fn update_bits(
     head_command.with_child((
         Sprite::from_image(asset_server.load(TAIL_PATH)),
         Transform::from_translation(Tail::get_position_on_the_length(body_length)),
-        Body { expanding: false },
+        Body,
         BitIter { pos: body_length },
         Tail,
         Player,
@@ -168,12 +163,17 @@ fn update_bits(
 /// ハコフグくんの伸縮をコントール
 fn body_system(
     time: Res<Time>,
-    mut query: Query<(&mut Transform, &mut Body, &BitIter, Option<&Tail>)>,
+    mut head_query: Query<&mut Head>,
+    mut body_query: Query<(&mut Transform, &BitIter, Option<&Tail>), With<Body>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
-    for (mut transform, mut body, bit_iter, tail) in &mut query {
+    let mut head = match head_query.single_mut() {
+        Ok(o) => o,
+        Err(_) => panic!("Head not found"),
+    };
+    for (mut transform, bit_iter, tail) in &mut body_query {
         // 最終的にどの位置にいればいいかを計算する
-        let ideal_x = if body.expanding {
+        let ideal_x = if head.is_expanding {
             -(((bit_iter.pos + 1) * TILE_SIZE) as f32)
         } else {
             match tail {
@@ -185,7 +185,7 @@ fn body_system(
         let difference = transform.translation.x - ideal_x;
         if difference.abs() <= 0.01 {
             // 差が一定以下のときのみ伸縮の入力を受け付ける
-            body.expanding = keyboard_input.pressed(KeyCode::ShiftLeft);
+            head.is_expanding = keyboard_input.pressed(KeyCode::ShiftLeft);
         } else {
             // このフレームに移動する量
             let shrink_speed = (TILE_SIZE as f32) / SHRINK_PER_TILE * time.delta_secs();
@@ -205,13 +205,20 @@ fn body_system(
     }
 }
 
-/// 表情をスプライトに反映させる
-fn face_system(query: Query<(&mut Sprite, &FaceState)>, asset_server: Res<AssetServer>) {
-    for (mut sprite, facestate) in query {
-        sprite.image = asset_server.load(match facestate {
-            &FaceState::Normal => HEAD_PATH,
-            &FaceState::Expanding => EXPANDING_PATH,
-            &FaceState::Surplising => SURPLIZING_PATH,
-        })
+fn face_manager(
+    mut query: Query<(&mut Sprite, Option<&PlayerCollidedAnimation>, &Head)>,
+    asset_server: Res<AssetServer>,
+) {
+    if let Ok((mut sprite, col_anim, head)) = query.single_mut() {
+        sprite.image = asset_server.load(match col_anim {
+            Some(_) => SURPLIZING_PATH,
+            None => {
+                if head.is_expanding {
+                    EXPANDING_PATH
+                } else {
+                    HEAD_PATH
+                }
+            }
+        });
     }
 }

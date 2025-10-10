@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::boxfish::{BitIter, Body, Collidable, FaceState, Head, TILE_SIZE, TileCoords};
+use crate::boxfish::{BitIter, Body, Collidable, Head, TILE_SIZE, TileCoords};
 use bevy::prelude::*;
 
 #[derive(Clone)]
@@ -54,23 +54,20 @@ pub fn boxfish_moving(
     mut commands: Commands,
     time: Res<Time>,
     mut queries: ParamSet<(
-        Query<
-            (&mut Transform, &mut TileCoords, Entity, &mut FaceState),
-            (With<Head>, Without<PlayerCollidedAnimation>),
-        >,
+        Query<(&mut Transform, &mut TileCoords, Entity, &Head), Without<PlayerCollidedAnimation>>,
         Query<&TileCoords, With<Collidable>>,
     )>,
     mut on_moved: EventWriter<OnMoved>,
-    body_query: Query<(&Body, &BitIter)>,
+    body_query: Query<&BitIter, With<Body>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
     let wall_positions: Vec<IVec2> = queries.p1().iter().map(|c| c.tile_pos).collect();
-    let body_length: usize = body_query
-        .iter()
-        .map(|(body, bit_iter)| 1 + if body.expanding { bit_iter.pos } else { 1 })
-        .max()
-        .unwrap_or(1);
-    if let Ok((mut transform, mut tile, entity, mut face_state)) = queries.p0().single_mut() {
+    if let Ok((mut transform, mut tile, entity, head)) = queries.p0().single_mut() {
+        let body_length: usize = body_query
+            .iter()
+            .map(|bit_iter| 1 + if head.is_expanding { bit_iter.pos } else { 1 })
+            .max()
+            .unwrap_or(1);
         let target_pos = Vec2::new(
             (tile.tile_pos.x * (TILE_SIZE as i32)) as f32,
             (tile.tile_pos.y * (TILE_SIZE as i32)) as f32,
@@ -101,7 +98,6 @@ pub fn boxfish_moving(
                         progress: 0.,
                         travel: direction,
                     });
-                    *face_state = FaceState::Surplising;
                 }
             }
         } else {
@@ -126,7 +122,6 @@ pub fn collided_animation(
     mut commands: Commands,
     mut query: Query<
         (
-            &mut FaceState,
             &mut Transform,
             &mut PlayerCollidedAnimation,
             &TileCoords,
@@ -135,16 +130,13 @@ pub fn collided_animation(
         With<Head>,
     >,
 ) {
-    if let Ok((mut face_state, mut transform, mut collided_anim, tcoords, entity)) =
-        query.single_mut()
-    {
+    if let Ok((mut transform, mut collided_anim, tcoords, entity)) = query.single_mut() {
         let halfed_travel = collided_anim.travel.into_ivec2().as_vec2() / 2.0 * (TILE_SIZE as f32);
         let anim = halfed_travel * collided_anim.progress.sin();
         transform.translation = (tcoords.into_vec2() + anim).extend(0.);
 
         if collided_anim.progress > PI {
             commands.entity(entity).remove::<PlayerCollidedAnimation>();
-            *face_state = FaceState::Normal;
         } else {
             collided_anim.progress += 0.1;
         }
