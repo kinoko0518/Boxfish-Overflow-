@@ -23,7 +23,13 @@ pub struct TileCoords {
 
 impl TileCoords {
     pub fn into_vec2(&self) -> Vec2 {
-        (self.tile_pos * (TILE_SIZE as i32)).as_vec2()
+        Self::ivec2_to_vec2(self.tile_pos)
+    }
+    pub fn from_ivec2(ivec2: IVec2) -> Self {
+        Self { tile_pos: ivec2 }
+    }
+    pub fn ivec2_to_vec2(ivec2: IVec2) -> Vec2 {
+        (ivec2 * (TILE_SIZE as i32)).as_vec2()
     }
 }
 

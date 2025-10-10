@@ -1,7 +1,7 @@
 use crate::{
     Bit, TILE_SIZE, TileCoords,
     aquarium::ConstructAquarium,
-    boxfish::{BitIter, Body, BooleanImage, Head, Player, Tail, visual::PlayerImage},
+    boxfish::{BitIter, Body, BooleanImage, Head, PLAYER_LAYER, Player, Tail, visual::PlayerImage},
 };
 use bevy::prelude::*;
 
@@ -14,9 +14,10 @@ pub fn aquarium_setup(
 ) {
     commands.spawn((
         player_image.from_index(2, 0),
-        Transform::from_xyz(0., 0., 10.),
+        Transform::from_xyz(0., 0., PLAYER_LAYER),
         Head {
             is_expanding: false,
+            history: Vec::new(),
         },
         Player,
         TileCoords {
@@ -47,7 +48,8 @@ pub fn update_bits(
     };
     // 座標を更新
     head.3.tile_pos = aquarium.player_origin;
-    head.2.translation = (aquarium.player_origin.as_vec2() * (TILE_SIZE as f32)).extend(10.);
+    head.2.translation =
+        (aquarium.player_origin.as_vec2() * (TILE_SIZE as f32)).extend(PLAYER_LAYER);
 
     // 古いビットとしっぽを削除
     if let Some(children) = head.1 {
@@ -62,14 +64,14 @@ pub fn update_bits(
             let id = commands
                 .spawn((
                     player_image.from_index(1, 0),
-                    Transform::from_xyz(0., 0., 10.),
+                    Transform::from_xyz(0., 0., PLAYER_LAYER),
                     Body,
                     BitIter { pos: iter },
                     Player,
                 ))
                 .with_child((
                     boolean_image.from_y_to_sprite(0),
-                    Transform::from_xyz(0., 0., 10.),
+                    Transform::from_xyz(0., 0., PLAYER_LAYER),
                     Bit { boolean: *bit },
                     BitIter { pos: iter },
                     Player,

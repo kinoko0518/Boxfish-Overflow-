@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use crate::TileCoords;
-use crate::boxfish::{BitIter, Body, Collidable, Head, TILE_SIZE, Tail};
+use crate::boxfish::{BitIter, Body, Collidable, Head, PLAYER_LAYER, TILE_SIZE, Tail};
 use bevy::prelude::*;
 
 #[derive(Clone)]
@@ -50,6 +50,38 @@ pub struct PlayerCollidedAnimation {
 }
 
 const SECONDS_PER_TILE: f32 = 0.2;
+
+pub fn regist_movement_history(
+    mut query: Query<(&mut Head, &TileCoords)>,
+    mut travel: EventReader<OnMoved>,
+) {
+    for read in travel.read() {
+        if let Ok((mut head, coords)) = query.single_mut() {
+            head.history
+                .push(coords.tile_pos - read.travel.into_ivec2());
+        }
+    }
+}
+
+pub fn undo(
+    head_query: Query<(&mut TileCoords, &mut Transform, &mut Head)>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+) {
+    let do_undo = keyboard_input
+        .get_pressed()
+        .any(|pressed| matches!(pressed, KeyCode::ControlLeft))
+        && keyboard_input
+            .get_just_pressed()
+            .any(|pressed| matches!(pressed, KeyCode::KeyZ));
+    if do_undo {
+        for (mut t_coords, mut transform, mut head) in head_query {
+            if let Some(last) = head.history.pop() {
+                t_coords.tile_pos = last;
+                transform.translation = TileCoords::ivec2_to_vec2(last).extend(PLAYER_LAYER);
+            }
+        }
+    }
+}
 
 pub fn boxfish_moving(
     mut commands: Commands,

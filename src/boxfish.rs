@@ -27,6 +27,8 @@ impl Plugin for PlayerPlugin {
                     visual::face_manager,
                     movement::collided_animation,
                     register::hightlight_collided_gate,
+                    movement::regist_movement_history,
+                    movement::undo,
                 ),
             )
             .add_systems(
@@ -63,6 +65,7 @@ pub struct Tail;
 #[derive(Component)]
 pub struct Head {
     is_expanding: bool,
+    history: Vec<IVec2>,
 }
 
 #[derive(Component)]
