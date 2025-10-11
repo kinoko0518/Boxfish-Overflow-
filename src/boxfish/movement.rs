@@ -1,9 +1,11 @@
 use std::f32::consts::PI;
 
 use crate::TileCoords;
+use crate::aquarium::{Goal, StageCompleted};
 use crate::boxfish::{
     BitIter, Body, BoxfishRegister, Collidable, Head, PLAYER_LAYER, TILE_SIZE, Tail,
 };
+use crate::stage_manager::NextStage;
 use bevy::prelude::*;
 
 #[derive(Clone)]
@@ -109,10 +111,7 @@ pub fn boxfish_moving(
             .map(|bit_iter| 1 + if head.is_expanding { bit_iter.pos } else { 1 })
             .max()
             .unwrap_or(1);
-        let target_pos = Vec2::new(
-            (tile.tile_pos.x * (TILE_SIZE as i32)) as f32,
-            (tile.tile_pos.y * (TILE_SIZE as i32)) as f32,
-        );
+        let target_pos = TileCoords::ivec2_to_vec2(tile.tile_pos);
         let current_pos = transform.translation.xy();
         let difference = target_pos - current_pos;
 
@@ -266,6 +265,35 @@ pub fn body_system(
                 // 座標に移動量を加算
                 transform.translation.x += travel_in_frame;
             }
+        }
+    }
+}
+
+pub fn goal_detection_system(
+    mut commands: Commands,
+    head_query: Query<(&Head, &TileCoords)>,
+    bits: Query<&BitIter>,
+    goals: Query<(&Goal, &TileCoords, Entity), Without<StageCompleted>>,
+    mut next_stage: EventWriter<NextStage>,
+) {
+    let (head, tile_coords) = if let Ok((head, tile_coords)) = head_query.single() {
+        (head, tile_coords)
+    } else {
+        return;
+    };
+    let bit_iters: Vec<usize> = if head.is_expanding {
+        bits.iter().map(|bit| bit.pos).collect()
+    } else {
+        (0..2).collect()
+    };
+    let player_coods = bit_iters
+        .iter()
+        .map(|i| tile_coords.tile_pos - IVec2::new(*i as i32, 0))
+        .collect::<Vec<IVec2>>();
+    for (_, pos, entity) in goals {
+        if player_coods.contains(&pos.tile_pos) {
+            commands.entity(entity).insert(StageCompleted);
+            next_stage.write(NextStage);
         }
     }
 }

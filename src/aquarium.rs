@@ -1,15 +1,12 @@
-use crate::{TILE_SIZE, TileCoords};
+use crate::{TILE_SIZE, TileCoords, stage_manager::ConstructAquarium};
 use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
 
 pub struct AquariumPlugin;
 
 impl Plugin for AquariumPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ConstructAquarium>()
-            .add_systems(Startup, call_default_aquarium)
-            .add_systems(Update, tile_adjust)
-            .add_systems(Update, highlight_incorrect_bits)
+        app.add_systems(Update, highlight_incorrect_bits)
+            .add_systems(Update, goal_swaying)
             .add_systems(Update, parse_aquarium);
     }
 }
@@ -29,11 +26,6 @@ pub struct LogiRegister {
     pub logikind: LogiKind,
 }
 
-#[derive(Component)]
-/// TileCoordsを持つコンポーネントのうち、位置合わせを必要とする
-/// エンティティを識別するコンポーネント
-pub struct TileAdjust;
-
 #[derive(Component, Debug)]
 /// ゲートのうち、プレイヤーと接触したときに異なるビットだった、
 /// すなわち条件が満たされていないビットを赤くハイライトするためのコンポーネント
@@ -48,44 +40,15 @@ pub enum LogiKind {
     Or,
     Not,
     Xor,
+    Undo,
     Gate,
-}
-
-#[derive(Event, Serialize, Deserialize)]
-pub struct ConstructAquarium {
-    pub content: String,
-    pub player_origin: IVec2,
-    pub player_defaultbits: Vec<bool>,
-}
-
-impl ConstructAquarium {
-    pub fn test_stage() -> Self {
-        Self {
-            content: "
-WWWWWWWWWWWW
-W          W
-W          W
-W  N0110N  W
-W          W
-W          W
-WWWWWWWG11GW
-     W     W
-     W     W
-     WWWWWWW
-            "
-            .into(),
-            player_origin: IVec2::new(4, 6),
-            player_defaultbits: vec![false, false],
-        }
-    }
 }
 
 const WALL_TILESET: &str = "embedded://tile/wall.png";
 const LOGIGATE_TILESET: &str = "embedded://tile/logical_gates.png";
+const GOAL_TILESET: &str = "embedded://tile/goal.png";
 
-pub fn call_default_aquarium(mut construct_aquarium: EventWriter<ConstructAquarium>) {
-    construct_aquarium.write(ConstructAquarium::test_stage());
-}
+const TILE_LAYER: f32 = 0.;
 
 pub fn highlight_incorrect_bits(
     query: Query<(&mut Sprite, &mut IncorrectBit), With<LogiRegister>>,
@@ -96,6 +59,12 @@ pub fn highlight_incorrect_bits(
         incorrect_bit.remaining = std::cmp::max((incorrect_bit.remaining as i32) - 3, 0) as u8;
     }
 }
+
+#[derive(Component)]
+pub struct Goal;
+
+#[derive(Component)]
+pub struct StageCompleted;
 
 pub fn parse_aquarium(
     mut commands: Commands,
@@ -127,22 +96,18 @@ fn chars_into_tiles(
             bitkind: Option<LogiKind>,
             tail_found: bool,
         }
-        type LogigateBundle = (Sprite, (Transform, TileCoords, Tiles, TileAdjust));
         let mut state = State {
             bitkind: None,
             tail_found: false,
         };
         for (x, c) in s.chars().enumerate() {
-            let coords = TileCoords {
-                tile_pos: IVec2::new(x as i32, y as i32),
-            };
-            let bit_common_components = (
-                Transform::from_xyz(0., 0., 0.),
-                Tiles,
-                TileAdjust,
-                IncorrectBit { remaining: 0 },
-                coords.clone(),
+            let coords = (
+                TileCoords {
+                    tile_pos: IVec2::new(x as i32, y as i32),
+                },
+                Transform::from_xyz((x * TILE_SIZE) as f32, (y * TILE_SIZE) as f32, TILE_LAYER),
             );
+            let bit_common_components = (Tiles, IncorrectBit { remaining: 0 }, coords.clone());
             let from_index = |x: usize, y: usize| -> Sprite {
                 Sprite::from_atlas_image(
                     tile_set_image.clone(),
@@ -153,13 +118,10 @@ fn chars_into_tiles(
                 )
             };
             let mut get_logigate =
-                |tail_index: (usize, usize), logikind: LogiKind| -> LogigateBundle {
-                    let gate_common_components = (
-                        Transform::from_xyz(0., 0., 0.),
-                        coords.clone(),
-                        Tiles,
-                        TileAdjust,
-                    );
+                |tail_index: (usize, usize),
+                 logikind: LogiKind|
+                 -> (Sprite, ((TileCoords, bevy::prelude::Transform), Tiles)) {
+                    let gate_common_components = (coords.clone(), Tiles);
                     let sprite: Sprite;
                     let do_spawn_head = if let Some(bkind) = state.bitkind {
                         bkind == logikind && state.tail_found
@@ -193,13 +155,22 @@ fn chars_into_tiles(
                 'G' => {
                     commands.spawn(get_logigate((2, 0), LogiKind::Gate));
                 }
+                'U' => {
+                    commands.spawn(get_logigate((0, 5), LogiKind::Undo));
+                }
                 'W' => {
                     commands.spawn((
                         Sprite::from_image(asset_server.load(WALL_TILESET)),
-                        Transform::from_xyz(0., 0., 0.),
                         Tiles,
                         Collidable,
-                        TileAdjust,
+                        coords,
+                    ));
+                }
+                'E' => {
+                    commands.spawn((
+                        Sprite::from_image(asset_server.load(GOAL_TILESET)),
+                        Tiles,
+                        Goal,
                         coords,
                     ));
                 }
@@ -229,13 +200,11 @@ fn chars_into_tiles(
     }
 }
 
-pub fn tile_adjust(mut query: Query<(&TileCoords, &mut Transform), Changed<TileAdjust>>) {
-    for (t_coords, mut transform) in &mut query {
-        let t_pos = t_coords.tile_pos;
-        transform.translation = Vec3::new(
-            (t_pos.x * (TILE_SIZE as i32)) as f32,
-            (t_pos.y * (TILE_SIZE as i32)) as f32,
-            0.,
-        );
+pub fn goal_swaying(query: Query<(&mut Transform, &TileCoords), With<Goal>>, time: Res<Time>) {
+    for (mut transform, tile_coords) in query {
+        let swayness = Vec2::new((time.elapsed_secs() * 3.).sin(), time.elapsed_secs().sin())
+            * (TILE_SIZE as f32)
+            / 4.;
+        transform.translation = (tile_coords.into_vec2() + swayness).extend(TILE_LAYER);
     }
 }

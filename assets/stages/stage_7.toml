@@ -1,0 +1,18 @@
+content = """
+WWWWWWWWWWWWWWWW
+W       W      W
+W       W      W
+WO11010OWN1111NW
+W              W
+W              W
+WWWWWWWWWG1010GW
+W              W
+W              W
+WG0101GWWU1111UW
+W       WWWWWWWW
+W   E   W
+W       W
+WWWWWWWWW
+"""
+player_origin = [3, 11]
+player_defaultbits = [false, false, false, false]

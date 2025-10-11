@@ -29,6 +29,7 @@ impl Plugin for PlayerPlugin {
                     register::hightlight_collided_gate,
                     movement::regist_movement_history,
                     movement::undo,
+                    movement::goal_detection_system,
                 ),
             )
             .add_systems(
@@ -48,7 +49,7 @@ const PLAYER_LAYER: f32 = 10.;
 #[derive(Component)]
 pub struct Body;
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct BoxfishRegister {
     boolean: bool,
     history: Vec<bool>,

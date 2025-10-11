@@ -6,13 +6,17 @@
 mod aquarium;
 mod boid;
 mod boxfish;
+mod stage_manager;
 mod styling;
 
 use bevy::prelude::*;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
 use boxfish::PlayerPlugin;
 
-use crate::{aquarium::AquariumPlugin, boid::BoidPlugin, styling::StylingPlugin};
+use crate::{
+    aquarium::AquariumPlugin, boid::BoidPlugin, stage_manager::StageManagerPlugin,
+    styling::StylingPlugin,
+};
 
 const TILE_SIZE: usize = 16;
 
@@ -37,6 +41,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(EmbeddedAssetPlugin::default())
+        .add_plugins(StageManagerPlugin)
         .add_plugins(StylingPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(BoidPlugin)

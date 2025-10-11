@@ -66,16 +66,30 @@ pub fn register_system(
             for (gate_coords, gate_bit, logikind) in &gates {
                 if collide_with(&from, &travel, &gate_coords) {
                     let now = bit.boolean;
-                    bit.history.push(now);
                     match logikind {
-                        LogiKind::And => bit.boolean &= *gate_bit,
-                        LogiKind::Or => bit.boolean |= *gate_bit,
+                        LogiKind::And => {
+                            bit.history.push(now);
+                            bit.boolean &= *gate_bit;
+                        }
+                        LogiKind::Or => {
+                            bit.history.push(now);
+                            bit.boolean |= *gate_bit;
+                        }
                         LogiKind::Not => {
                             if *gate_bit {
+                                bit.history.push(now);
                                 bit.boolean = !bit.boolean
                             }
                         }
-                        LogiKind::Xor => bit.boolean ^= *gate_bit,
+                        LogiKind::Xor => {
+                            bit.history.push(now);
+                            bit.boolean ^= *gate_bit;
+                        }
+                        LogiKind::Undo => {
+                            if let Some(last) = bit.history.pop() {
+                                bit.boolean = last;
+                            }
+                        }
                         LogiKind::Gate => {
                             if bit.boolean != *gate_bit {
                                 coords_after_process = Some(head_coord_before_move);

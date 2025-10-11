@@ -1,20 +1,16 @@
 use crate::{
     TILE_SIZE, TileCoords,
-    aquarium::ConstructAquarium,
     boxfish::{
         BitIter, Body, BooleanImage, BoxfishRegister, Head, PLAYER_LAYER, Player, Tail,
         visual::PlayerImage,
     },
+    stage_manager::ConstructAquarium,
 };
 use bevy::prelude::*;
 
 /// ゲーム開始時に一度だけ呼び出され、プレイヤーの頭やカメラなどの
 /// ゲームを通して削除されないものを配置し、最初のステージを読み込む。
-pub fn aquarium_setup(
-    mut commands: Commands,
-    mut event_writer: EventWriter<ConstructAquarium>,
-    player_image: Res<PlayerImage>,
-) {
+pub fn aquarium_setup(mut commands: Commands, player_image: Res<PlayerImage>) {
     commands.spawn((
         player_image.from_index(2, 0),
         Transform::from_xyz(0., 0., PLAYER_LAYER),
@@ -28,7 +24,6 @@ pub fn aquarium_setup(
         },
     ));
     commands.spawn(Camera2d);
-    event_writer.write(ConstructAquarium::test_stage());
 }
 
 /// 新しく読み込まれたステージを適用
