@@ -33,11 +33,6 @@ impl TileCoords {
     }
 }
 
-#[derive(Component)]
-pub struct Bit {
-    boolean: bool,
-}
-
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)

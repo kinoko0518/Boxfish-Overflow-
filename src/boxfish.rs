@@ -49,6 +49,12 @@ const PLAYER_LAYER: f32 = 10.;
 pub struct Body;
 
 #[derive(Component)]
+pub struct BoxfishRegister {
+    boolean: bool,
+    history: Vec<bool>,
+}
+
+#[derive(Component)]
 pub struct BitIter {
     pos: usize,
 }

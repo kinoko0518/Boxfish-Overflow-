@@ -1,4 +1,4 @@
-use crate::{Bit, TILE_SIZE, TileCoords};
+use crate::{TILE_SIZE, TileCoords};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -23,8 +23,11 @@ pub struct Tiles;
 pub struct Collidable;
 
 #[derive(Component)]
-/// 論理ゲートを識別するコンポーネント
-pub struct LogiGate;
+/// 論理ゲートのレジスタのコンポーネント
+pub struct LogiRegister {
+    pub boolean: bool,
+    pub logikind: LogiKind,
+}
 
 #[derive(Component)]
 /// TileCoordsを持つコンポーネントのうち、位置合わせを必要とする
@@ -39,7 +42,7 @@ pub struct IncorrectBit {
     pub remaining: u8,
 }
 
-#[derive(Component, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum LogiKind {
     And,
     Or,
@@ -84,7 +87,9 @@ pub fn call_default_aquarium(mut construct_aquarium: EventWriter<ConstructAquari
     construct_aquarium.write(ConstructAquarium::test_stage());
 }
 
-pub fn highlight_incorrect_bits(query: Query<(&mut Sprite, &mut IncorrectBit), With<Bit>>) {
+pub fn highlight_incorrect_bits(
+    query: Query<(&mut Sprite, &mut IncorrectBit), With<LogiRegister>>,
+) {
     for (mut sprite, mut incorrect_bit) in query {
         let not_red = 255 - incorrect_bit.remaining;
         sprite.color = Color::srgb_u8(255, not_red, not_red);
@@ -122,11 +127,7 @@ fn chars_into_tiles(
             bitkind: Option<LogiKind>,
             tail_found: bool,
         }
-        type LogigateBundle = (
-            Sprite,
-            LogiKind,
-            (Transform, TileCoords, Tiles, LogiGate, TileAdjust),
-        );
+        type LogigateBundle = (Sprite, (Transform, TileCoords, Tiles, TileAdjust));
         let mut state = State {
             bitkind: None,
             tail_found: false,
@@ -138,7 +139,6 @@ fn chars_into_tiles(
             let bit_common_components = (
                 Transform::from_xyz(0., 0., 0.),
                 Tiles,
-                LogiGate,
                 TileAdjust,
                 IncorrectBit { remaining: 0 },
                 coords.clone(),
@@ -158,7 +158,6 @@ fn chars_into_tiles(
                         Transform::from_xyz(0., 0., 0.),
                         coords.clone(),
                         Tiles,
-                        LogiGate,
                         TileAdjust,
                     );
                     let sprite: Sprite;
@@ -174,7 +173,7 @@ fn chars_into_tiles(
                         state.bitkind = Some(logikind);
                     }
                     state.tail_found = !do_spawn_head;
-                    (sprite, logikind, gate_common_components)
+                    (sprite, gate_common_components)
                 };
             const LOGIKIND_UNDEFINED: &str =
                 "Parse Error: Expected a logigate's tail before any boolean";
@@ -207,17 +206,21 @@ fn chars_into_tiles(
                 '0' => {
                     commands.spawn((
                         from_index(1, 0),
-                        Bit { boolean: false },
+                        LogiRegister {
+                            boolean: false,
+                            logikind: state.bitkind.expect(LOGIKIND_UNDEFINED),
+                        },
                         bit_common_components,
-                        state.bitkind.expect(LOGIKIND_UNDEFINED),
                     ));
                 }
                 '1' => {
                     commands.spawn((
                         from_index(0, 0),
-                        Bit { boolean: true },
+                        LogiRegister {
+                            boolean: true,
+                            logikind: state.bitkind.expect(LOGIKIND_UNDEFINED),
+                        },
                         bit_common_components,
-                        state.bitkind.expect(LOGIKIND_UNDEFINED),
                     ));
                 }
                 _ => (),

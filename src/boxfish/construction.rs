@@ -1,7 +1,10 @@
 use crate::{
-    Bit, TILE_SIZE, TileCoords,
+    TILE_SIZE, TileCoords,
     aquarium::ConstructAquarium,
-    boxfish::{BitIter, Body, BooleanImage, Head, PLAYER_LAYER, Player, Tail, visual::PlayerImage},
+    boxfish::{
+        BitIter, Body, BooleanImage, BoxfishRegister, Head, PLAYER_LAYER, Player, Tail,
+        visual::PlayerImage,
+    },
 };
 use bevy::prelude::*;
 
@@ -72,7 +75,10 @@ pub fn update_bits(
                 .with_child((
                     boolean_image.from_y_to_sprite(0),
                     Transform::from_xyz(0., 0., PLAYER_LAYER),
-                    Bit { boolean: *bit },
+                    BoxfishRegister {
+                        boolean: *bit,
+                        history: Vec::new(),
+                    },
                     BitIter { pos: iter },
                     Player,
                 ))

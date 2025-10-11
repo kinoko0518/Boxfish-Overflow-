@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 
 use crate::{
-    Bit, TileCoords,
-    aquarium::{IncorrectBit, LogiKind},
+    TileCoords,
+    aquarium::{IncorrectBit, LogiKind, LogiRegister},
     boxfish::{
-        BitIter, BooleanImage, Head, Player,
+        BitIter, BooleanImage, BoxfishRegister, Head, Player,
         movement::{OnMoved, collide_with},
     },
 };
@@ -16,7 +16,7 @@ pub struct GateCollidedAt {
 
 /// プレイヤーのレジスタの見た目を真理値に合わせて更新
 pub fn bit_visualise(
-    mut query: Query<(&mut Sprite, &Bit), With<Player>>,
+    mut query: Query<(&mut Sprite, &BoxfishRegister), With<Player>>,
     boolean_image: Res<BooleanImage>,
 ) {
     for (mut sprite, bit) in &mut query {
@@ -32,9 +32,9 @@ pub fn register_system(
     mut on_moved: EventReader<OnMoved>,
     mut queries: ParamSet<(
         Query<&TileCoords, With<Player>>,
-        Query<(&TileCoords, &Bit, &LogiKind)>,
+        Query<(&TileCoords, &LogiRegister)>,
         Query<&mut TileCoords, With<Head>>,
-        Query<(&BitIter, &mut Bit), With<Player>>,
+        Query<(&BitIter, &mut BoxfishRegister), With<Player>>,
     )>,
     mut gate_collided_at_writer: EventWriter<GateCollidedAt>,
 ) {
@@ -53,7 +53,7 @@ pub fn register_system(
         let gates: Vec<(IVec2, bool, LogiKind)> = queries
             .p1()
             .iter()
-            .map(|g| (g.0.tile_pos, g.1.boolean, *g.2))
+            .map(|g| (g.0.tile_pos, g.1.boolean, g.1.logikind))
             .collect();
         // 移動前の頭の位置
         let head_coord_before_move = &head - travel.into_ivec2();
@@ -65,10 +65,16 @@ pub fn register_system(
             let from = head_coord_before_move + IVec2::new(local_x_from_head, 0);
             for (gate_coords, gate_bit, logikind) in &gates {
                 if collide_with(&from, &travel, &gate_coords) {
+                    let now = bit.boolean;
+                    bit.history.push(now);
                     match logikind {
                         LogiKind::And => bit.boolean &= *gate_bit,
                         LogiKind::Or => bit.boolean |= *gate_bit,
-                        LogiKind::Not => bit.boolean = !bit.boolean,
+                        LogiKind::Not => {
+                            if *gate_bit {
+                                bit.boolean = !bit.boolean
+                            }
+                        }
                         LogiKind::Xor => bit.boolean ^= *gate_bit,
                         LogiKind::Gate => {
                             if bit.boolean != *gate_bit {

@@ -1,7 +1,9 @@
 use std::f32::consts::PI;
 
 use crate::TileCoords;
-use crate::boxfish::{BitIter, Body, Collidable, Head, PLAYER_LAYER, TILE_SIZE, Tail};
+use crate::boxfish::{
+    BitIter, Body, BoxfishRegister, Collidable, Head, PLAYER_LAYER, TILE_SIZE, Tail,
+};
 use bevy::prelude::*;
 
 #[derive(Clone)]
@@ -65,6 +67,7 @@ pub fn regist_movement_history(
 
 pub fn undo(
     head_query: Query<(&mut TileCoords, &mut Transform, &mut Head)>,
+    bit_query: Query<&mut BoxfishRegister>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
     let do_undo = keyboard_input
@@ -78,6 +81,11 @@ pub fn undo(
             if let Some(last) = head.history.pop() {
                 t_coords.tile_pos = last;
                 transform.translation = TileCoords::ivec2_to_vec2(last).extend(PLAYER_LAYER);
+            }
+        }
+        for mut register in bit_query {
+            if let Some(last) = register.history.pop() {
+                register.boolean = last;
             }
         }
     }
