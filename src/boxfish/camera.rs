@@ -14,7 +14,6 @@ pub fn camera_adjust(
                 lines.collect::<Vec<&str>>().len() as f32,
                 0.,
             ) * (TILE_SIZE as f32);
-            println!("{}", size);
             transform.translation = size * 0.5;
         }
     }

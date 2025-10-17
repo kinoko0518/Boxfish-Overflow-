@@ -9,6 +9,7 @@ mod boxfish;
 mod stage_manager;
 mod styling;
 
+use bevy::image::ImageSamplerDescriptor;
 use bevy::prelude::*;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
 use boxfish::PlayerPlugin;
@@ -39,7 +40,9 @@ impl TileCoords {
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(ImagePlugin {
+            default_sampler: ImageSamplerDescriptor::nearest(),
+        }))
         .add_plugins(EmbeddedAssetPlugin::default())
         .add_plugins(StageManagerPlugin)
         .add_plugins(StylingPlugin)
