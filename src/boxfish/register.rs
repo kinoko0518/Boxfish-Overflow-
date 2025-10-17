@@ -33,7 +33,7 @@ pub fn register_system(
     mut queries: ParamSet<(
         Query<&TileCoords, With<Player>>,
         Query<(&TileCoords, &LogiRegister)>,
-        Query<&mut TileCoords, With<Head>>,
+        Query<(&mut TileCoords, &Head)>,
         Query<(&BitIter, &mut BoxfishRegister), With<Player>>,
     )>,
     mut gate_collided_at_writer: EventWriter<GateCollidedAt>,
@@ -103,9 +103,13 @@ pub fn register_system(
             }
         }
         // ゲートと一致しなければ通れないため元の位置に戻す
-        if let (Ok(mut head_mut), Some(coords)) = (queries.p2().single_mut(), coords_after_process)
+        // 一致した，しなかったに関わらず伸びていなければ弾く
+        if let (Ok((mut head_mut, head)), Some(coords)) =
+            (queries.p2().single_mut(), coords_after_process)
         {
-            head_mut.tile_pos = coords;
+            if head.is_expanding {
+                head_mut.tile_pos = coords;
+            }
         }
     }
 }

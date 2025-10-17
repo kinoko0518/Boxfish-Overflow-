@@ -1,3 +1,4 @@
+pub mod camera;
 pub mod construction;
 pub mod movement;
 pub mod register;
@@ -30,6 +31,7 @@ impl Plugin for PlayerPlugin {
                     movement::regist_movement_history,
                     movement::undo,
                     movement::goal_detection_system,
+                    camera::camera_adjust,
                 ),
             )
             .add_systems(

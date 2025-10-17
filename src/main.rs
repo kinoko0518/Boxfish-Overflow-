@@ -44,7 +44,7 @@ fn main() {
         .add_plugins(StageManagerPlugin)
         .add_plugins(StylingPlugin)
         .add_plugins(PlayerPlugin)
-        .add_plugins(BoidPlugin)
+        // .add_plugins(BoidPlugin)
         .add_plugins(AquariumPlugin)
         .run();
 }

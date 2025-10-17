@@ -23,7 +23,7 @@ pub fn aquarium_setup(mut commands: Commands, player_image: Res<PlayerImage>) {
             tile_pos: IVec2::new(0, 0),
         },
     ));
-    commands.spawn(Camera2d);
+    commands.spawn((Camera2d, Transform::from_xyz(0., 0., 0.)));
 }
 
 /// 新しく読み込まれたステージを適用
