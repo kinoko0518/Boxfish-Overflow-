@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 
+use crate::prelude::*;
 use crate::{
-    TileCoords,
     aquarium::{IncorrectBit, LogiKind, LogiRegister},
     boxfish::{
-        BitIter, BooleanImage, BoxfishRegister, Head, Player,
+        BooleanImage, BoxfishRegister,
         movement::{OnMoved, collide_with},
     },
 };

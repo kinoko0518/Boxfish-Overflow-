@@ -1,4 +1,5 @@
-use crate::boxfish::{Head, PlayerCollidedAnimation};
+use crate::boxfish::PlayerCollidedAnimation;
+use crate::prelude::*;
 use bevy::prelude::*;
 
 // Resources

@@ -1,10 +1,8 @@
 use std::f32::consts::PI;
 
-use crate::TileCoords;
 use crate::aquarium::{Goal, StageCompleted};
-use crate::boxfish::{
-    BitIter, Body, BoxfishRegister, Collidable, Head, PLAYER_LAYER, TILE_SIZE, Tail,
-};
+use crate::boxfish::{BoxfishRegister, PLAYER_LAYER};
+use crate::prelude::*;
 use crate::stage_manager::NextStage;
 use bevy::prelude::*;
 

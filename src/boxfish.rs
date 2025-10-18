@@ -4,7 +4,8 @@ pub mod movement;
 pub mod register;
 pub mod visual;
 
-use crate::{TILE_SIZE, aquarium::Collidable, boxfish::movement::PlayerCollidedAnimation};
+use crate::boxfish::movement::PlayerCollidedAnimation;
+use crate::prelude::*;
 use bevy::prelude::*;
 pub use visual::{BooleanImage, PlayerImage};
 
@@ -46,7 +47,7 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-const PLAYER_LAYER: f32 = 10.;
+pub const PLAYER_LAYER: f32 = 10.;
 
 #[derive(Component)]
 pub struct Body;

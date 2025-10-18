@@ -1,4 +1,4 @@
-use crate::{TILE_SIZE, TileCoords, stage_manager::ConstructAquarium};
+use crate::prelude::*;
 use bevy::prelude::*;
 
 pub struct AquariumPlugin;

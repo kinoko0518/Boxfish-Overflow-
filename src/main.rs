@@ -4,8 +4,8 @@
 )]
 
 mod aquarium;
-mod boid;
 mod boxfish;
+pub mod prelude;
 mod stage_manager;
 mod styling;
 mod ui;
@@ -16,11 +16,11 @@ use bevy_embedded_assets::EmbeddedAssetPlugin;
 use boxfish::PlayerPlugin;
 
 use crate::{
-    aquarium::AquariumPlugin, boid::BoidPlugin, stage_manager::StageManagerPlugin,
-    styling::StylingPlugin, ui::UIPlugin,
+    aquarium::AquariumPlugin, stage_manager::StageManagerPlugin, styling::StylingPlugin,
+    ui::UIPlugin,
 };
 
-const TILE_SIZE: usize = 16;
+pub const TILE_SIZE: usize = 16;
 
 #[derive(Component, Clone)]
 pub struct TileCoords {
@@ -49,7 +49,6 @@ fn main() {
         .add_plugins(StylingPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(UIPlugin)
-        // .add_plugins(BoidPlugin)
         .add_plugins(AquariumPlugin)
         .run();
 }

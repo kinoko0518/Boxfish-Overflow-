@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{TILE_SIZE, stage_manager::ConstructAquarium};
+use crate::prelude::*;
 
 pub fn camera_adjust(
     query: Query<&mut Transform, With<Camera2d>>,

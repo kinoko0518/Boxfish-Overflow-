@@ -1,11 +1,5 @@
-use crate::{
-    TILE_SIZE, TileCoords,
-    boxfish::{
-        BitIter, Body, BooleanImage, BoxfishRegister, Head, PLAYER_LAYER, Player, Tail,
-        visual::PlayerImage,
-    },
-    stage_manager::ConstructAquarium,
-};
+use crate::boxfish::{BooleanImage, visual::PlayerImage};
+use crate::prelude::*;
 use bevy::prelude::*;
 
 /// ゲーム開始時に一度だけ呼び出され、プレイヤーの頭やカメラなどの
