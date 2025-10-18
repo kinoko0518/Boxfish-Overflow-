@@ -1,0 +1,16 @@
+stage_name = "論理カタヌキ"
+content = """
+WWWWWWWWWWWWWWWW
+W              W
+W    A0011A    W
+W　　    　　      W
+W    A1110A    W
+W              W
+WG0010GWWWWWWWWW
+W       W
+W   E   W
+W       W
+WWWWWWWWW
+"""
+player_origin = [3, 9]
+player_defaultbits = [true, true, true, true]

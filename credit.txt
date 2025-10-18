@@ -1,0 +1,2 @@
+効果音ラボ様 - 電子レンジでチン(assets/sound_effects/load_stage.ogg)
+LittleLimit様 - k8x12(assets/fonts/k8x12.ttf)

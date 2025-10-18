@@ -1,15 +1,16 @@
+stage_name = "一部でも"
 content = """
-WWWWWWWWWWWW
-W          W
-W          W
-W  N0110N  W
-W          W
-W          W
-WWWWWWWG11GW
-     W     W
-     W  E  W
-     W     W
-     WWWWWWW
+WWWWWWWWWWWWWWW
+W             W
+W      W      W
+W   N11111N   W
+W      W      W
+W             W
+WWWWWWWWWWG11GW
+        W     W
+        W  E  W
+        W     W
+        WWWWWWW
 """
 player_origin = [3, 6]
 player_defaultbits = [false, false]

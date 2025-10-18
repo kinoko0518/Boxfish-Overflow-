@@ -1,0 +1,16 @@
+stage_name = "足して，引いて"
+content = """
+WWWWWWWWWWWWWWWWWWWWWWW
+W                     W
+W                     W
+W   A000101A          W
+W                     W
+W                     W
+WG0100GWG1111GWWG0001GW
+W      W      W       W
+W             W   E   W
+WO1111O       W       W
+WWWWWWWWWWWWWWWWWWWWWWW
+"""
+player_origin = [3, 8]
+player_defaultbits = [true, true, true, false]

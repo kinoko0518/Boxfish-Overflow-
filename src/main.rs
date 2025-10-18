@@ -8,6 +8,7 @@ mod boid;
 mod boxfish;
 mod stage_manager;
 mod styling;
+mod ui;
 
 use bevy::image::ImageSamplerDescriptor;
 use bevy::prelude::*;
@@ -16,7 +17,7 @@ use boxfish::PlayerPlugin;
 
 use crate::{
     aquarium::AquariumPlugin, boid::BoidPlugin, stage_manager::StageManagerPlugin,
-    styling::StylingPlugin,
+    styling::StylingPlugin, ui::UIPlugin,
 };
 
 const TILE_SIZE: usize = 16;
@@ -47,6 +48,7 @@ fn main() {
         .add_plugins(StageManagerPlugin)
         .add_plugins(StylingPlugin)
         .add_plugins(PlayerPlugin)
+        .add_plugins(UIPlugin)
         // .add_plugins(BoidPlugin)
         .add_plugins(AquariumPlugin)
         .run();

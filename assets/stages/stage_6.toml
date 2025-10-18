@@ -1,0 +1,17 @@
+stage_name = "一個前のパターンに"
+content = """
+WWWWWW
+W    W
+W    W
+WO11OWWWWWW
+W     O10OW
+W         W
+W     U11UW
+WG10GWWWWWW
+W     W
+W  E  W
+W     W
+WWWWWWW
+"""
+player_origin = [3, 10]
+player_defaultbits = [false, false]

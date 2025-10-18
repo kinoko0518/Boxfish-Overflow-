@@ -1,0 +1,130 @@
+use bevy::prelude::*;
+
+use crate::stage_manager::{ConstructAquarium, StageManager};
+
+pub struct UIPlugin;
+
+impl Plugin for UIPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<UICommonResource>()
+            .init_resource::<LUMessageConstainer>()
+            .add_systems(Startup, (init_ucr, ui_construction).chain())
+            .add_systems(Update, (countup_duration, stage_index_display));
+    }
+}
+
+// UIで汎用的に使われるデータを読み込み・保管
+#[derive(Resource, Default)]
+pub struct UICommonResource {
+    font: Handle<Font>,
+    text_font: TextFont,
+}
+
+pub fn init_ucr(mut ucr: ResMut<UICommonResource>, asset_server: Res<AssetServer>) {
+    ucr.font = asset_server.load("fonts/k8x12.ttf");
+    ucr.text_font = TextFont {
+        font: ucr.font.clone(),
+        font_size: 32.,
+        ..default()
+    };
+}
+
+// 左(Left)上(Up)に表示されるメッセージの状態管理用リソース
+#[derive(Resource, Default)]
+pub struct LUMessageConstainer {
+    quit_duration: f32,
+    reset_duration: f32,
+}
+
+#[derive(Component)]
+pub struct LUMessage;
+
+#[derive(Component)]
+pub struct StageIndexDisplay;
+
+pub fn ui_construction(mut commands: Commands, ucr: Res<UICommonResource>) {
+    commands
+        .spawn(Node {
+            width: Val::Percent(100.),
+            height: Val::Percent(100.),
+            align_items: AlignItems::Baseline,
+            justify_content: JustifyContent::FlexStart,
+            flex_direction: FlexDirection::Column,
+            padding: UiRect::all(Val::Vw(3.)),
+            ..default()
+        })
+        .with_child((
+            Text::new(String::new()),
+            TextColor::BLACK,
+            ucr.text_font.clone(),
+            StageIndexDisplay,
+        ))
+        .with_child((
+            Text::new(String::new()),
+            TextColor::BLACK,
+            ucr.text_font.clone(),
+            LUMessage,
+        ));
+}
+
+const QUIT_EXPECTED_PRESSTIME: f32 = 5.;
+const RESET_EXPECTED_PRESSTIME: f32 = 5.;
+pub fn countup_duration(
+    lu_text_query: Query<&mut Text, With<LUMessage>>,
+    mut lmc: ResMut<LUMessageConstainer>,
+    key_input: Res<ButtonInput<KeyCode>>,
+    time: Res<Time>,
+    mut app_exit: EventWriter<AppExit>,
+    stage_manager: Res<StageManager>,
+    mut construct_aquarium: EventWriter<ConstructAquarium>,
+) {
+    if key_input.pressed(KeyCode::Escape) {
+        lmc.quit_duration += time.delta_secs();
+        if lmc.quit_duration > QUIT_EXPECTED_PRESSTIME {
+            app_exit.write(AppExit::Success);
+        }
+    } else {
+        lmc.quit_duration = 0.;
+    }
+    if key_input.pressed(KeyCode::KeyR) {
+        lmc.reset_duration += time.delta_secs();
+        if lmc.reset_duration > RESET_EXPECTED_PRESSTIME {
+            construct_aquarium.write(
+                toml::from_str::<ConstructAquarium>(
+                    stage_manager.stages.get(stage_manager.index).unwrap(),
+                )
+                .unwrap(),
+            );
+            lmc.reset_duration = 0.;
+        }
+    } else {
+        lmc.reset_duration = 0.;
+    }
+    for mut tex in lu_text_query {
+        if lmc.quit_duration > 0. {
+            tex.0 = format!(
+                "{}秒後に終了",
+                ((QUIT_EXPECTED_PRESSTIME - lmc.quit_duration) as usize + 1)
+            ) + &".".repeat(lmc.quit_duration as usize);
+        } else if lmc.reset_duration > 0. {
+            tex.0 = format!(
+                "{}秒後にステージをリセット",
+                ((RESET_EXPECTED_PRESSTIME - lmc.reset_duration) as usize + 1)
+            ) + &".".repeat(lmc.reset_duration as usize);
+        } else {
+            tex.0 = String::new();
+        }
+    }
+}
+
+pub fn stage_index_display(
+    mut query: Query<&mut Text, With<StageIndexDisplay>>,
+    stage_manager: Res<StageManager>,
+    mut construct_aquarium: EventReader<ConstructAquarium>,
+) {
+    for ca in construct_aquarium.read() {
+        for mut text in &mut query {
+            text.0 = format!("ステージ{} - {}", stage_manager.index + 1, ca.stage_name);
+        }
+    }
+}

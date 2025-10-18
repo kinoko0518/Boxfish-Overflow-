@@ -33,7 +33,13 @@ pub fn aquarium_setup(mut commands: Commands, player_image: Res<PlayerImage>) {
 
 /// 新しく読み込まれたステージを適用
 pub fn update_bits(
-    mut head_query: Query<(Entity, Option<&Children>, &mut Transform, &mut TileCoords), With<Head>>,
+    mut head_query: Query<(
+        Entity,
+        Option<&Children>,
+        &mut Transform,
+        &mut TileCoords,
+        &mut Head,
+    )>,
     mut construct_aquarium: EventReader<ConstructAquarium>,
     mut commands: Commands,
     player_image: Res<PlayerImage>,
@@ -101,4 +107,9 @@ pub fn update_bits(
         Tail,
         Player,
     ));
+
+    // 移動履歴をクリア
+    for mut head in head_query {
+        head.4.history = Vec::new();
+    }
 }

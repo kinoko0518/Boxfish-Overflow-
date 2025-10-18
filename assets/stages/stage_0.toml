@@ -1,13 +1,9 @@
-stage_name = "論理足し算"
+stage_name = "オドロキでひっくり返そう"
 content = """
 WWWWWWWWWWWWWW
 W            W
 W   W    W   W
 W   WN11NW   W
-W   W    W   W
-W            W
-W   W    W   W
-W   WO10OW   W
 W   W    W   W
 W            W
 WWWWWWWWWG11GW
