@@ -4,7 +4,7 @@ pub mod movement;
 pub mod register;
 pub mod visual;
 
-use crate::boxfish::movement::PlayerCollidedAnimation;
+use crate::boxfish::movement::{MovementPlugin, PlayerCollidedAnimation};
 use crate::prelude::*;
 use bevy::prelude::*;
 pub use visual::{BooleanImage, PlayerImage};
@@ -13,10 +13,10 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<movement::OnMoved>()
-            .add_event::<register::GateCollidedAt>()
+        app.add_event::<register::GateCollidedAt>()
             .init_resource::<BooleanImage>()
             .init_resource::<PlayerImage>()
+            .add_plugins(MovementPlugin)
             .add_systems(
                 Startup,
                 (visual::assets_setup, construction::aquarium_setup).chain(),
@@ -25,24 +25,14 @@ impl Plugin for PlayerPlugin {
                 Update,
                 (
                     construction::update_bits,
-                    movement::body_system,
                     visual::face_manager,
-                    movement::collided_animation,
                     register::hightlight_collided_gate,
-                    movement::regist_movement_history,
-                    movement::undo,
-                    movement::goal_detection_system,
                     camera::camera_adjust,
                 ),
             )
             .add_systems(
                 Update,
-                (
-                    movement::boxfish_moving,
-                    register::register_system,
-                    register::bit_visualise,
-                )
-                    .chain(),
+                (register::register_system, register::bit_visualise).chain(),
             );
     }
 }

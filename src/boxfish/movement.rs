@@ -1,54 +1,32 @@
-use std::f32::consts::PI;
+pub mod collision;
+pub mod input;
 
-use crate::aquarium::{Goal, StageCompleted};
-use crate::boxfish::{BoxfishRegister, PLAYER_LAYER};
+use crate::boxfish::{BoxfishRegister, PLAYER_LAYER, movement::input::player_input};
 use crate::prelude::*;
-use crate::stage_manager::NextStage;
 use bevy::prelude::*;
+pub use collision::PlayerCollidedAnimation;
 
-#[derive(Clone)]
-pub struct Travel {
-    direction: Direction,
-    amount: i32,
-}
+pub struct MovementPlugin;
 
-#[derive(Clone)]
-enum Direction {
-    X,
-    Y,
-}
-
-impl Travel {
-    pub fn into_ivec2(&self) -> IVec2 {
-        match &self.direction {
-            &Direction::X => IVec2::new(self.amount, 0),
-            &Direction::Y => IVec2::new(0, self.amount),
-        }
-    }
-    fn get_route(&self, origin: IVec2) -> Vec<IVec2> {
-        let sign = self.amount.signum();
-        (1..((self.amount.abs() as usize) + 1))
-            .map(|i| {
-                let i = sign * (i as i32);
-                origin
-                    + match self.direction {
-                        Direction::X => IVec2::new(i, 0),
-                        Direction::Y => IVec2::new(0, i),
-                    }
-            })
-            .collect::<Vec<IVec2>>()
+impl Plugin for MovementPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<OnMoved>().add_systems(
+            Update,
+            (
+                collision::collided_animation,
+                collision::goal_detection_system,
+                body_system,
+                boxfish_moving,
+                regist_movement_history,
+                undo,
+            ),
+        );
     }
 }
 
 #[derive(Event)]
 pub struct OnMoved {
     pub travel: Travel,
-}
-
-#[derive(Component)]
-pub struct PlayerCollidedAnimation {
-    travel: Travel,
-    progress: f32,
 }
 
 const SECONDS_PER_TILE: f32 = 0.2;
@@ -155,70 +133,6 @@ pub fn boxfish_moving(
     }
 }
 
-/// プレイヤーの衝突アニメーション
-pub fn collided_animation(
-    mut commands: Commands,
-    mut query: Query<
-        (
-            &mut Transform,
-            &mut PlayerCollidedAnimation,
-            &TileCoords,
-            Entity,
-        ),
-        With<Head>,
-    >,
-) {
-    if let Ok((mut transform, mut collided_anim, tcoords, entity)) = query.single_mut() {
-        let halfed_travel = collided_anim.travel.into_ivec2().as_vec2() / 2.0 * (TILE_SIZE as f32);
-        let anim = halfed_travel * collided_anim.progress.sin();
-        transform.translation = (tcoords.into_vec2() + anim).extend(0.);
-
-        if collided_anim.progress > PI {
-            commands.entity(entity).remove::<PlayerCollidedAnimation>();
-        } else {
-            collided_anim.progress += 0.1;
-        }
-    }
-}
-
-/// 単一の対象に対して衝突判定を行う
-pub fn collide_with(original: &IVec2, travel: &Travel, target: &IVec2) -> bool {
-    travel.get_route(*original).contains(target)
-}
-/// 複数の対象に対して衝突判定を行う
-pub fn do_collide(original: &IVec2, travel: &Travel, target: &[IVec2]) -> bool {
-    target.iter().any(|t| collide_with(original, travel, t))
-}
-
-fn player_input(keyboard_input: &Res<ButtonInput<KeyCode>>) -> Travel {
-    if keyboard_input.just_pressed(KeyCode::KeyW) {
-        Travel {
-            direction: Direction::Y,
-            amount: 1,
-        }
-    } else if keyboard_input.just_pressed(KeyCode::KeyS) {
-        Travel {
-            direction: Direction::Y,
-            amount: -1,
-        }
-    } else if keyboard_input.just_pressed(KeyCode::KeyA) {
-        Travel {
-            direction: Direction::X,
-            amount: -1,
-        }
-    } else if keyboard_input.just_pressed(KeyCode::KeyD) {
-        Travel {
-            direction: Direction::X,
-            amount: 1,
-        }
-    } else {
-        Travel {
-            direction: Direction::X,
-            amount: 0,
-        }
-    }
-}
-
 // Coefficients
 const SHRINK_PER_TILE: f32 = 0.05;
 
@@ -263,35 +177,6 @@ pub fn body_system(
                 // 座標に移動量を加算
                 transform.translation.x += travel_in_frame;
             }
-        }
-    }
-}
-
-pub fn goal_detection_system(
-    mut commands: Commands,
-    head_query: Query<(&Head, &TileCoords)>,
-    bits: Query<&BitIter>,
-    goals: Query<(&Goal, &TileCoords, Entity), Without<StageCompleted>>,
-    mut next_stage: EventWriter<NextStage>,
-) {
-    let (head, tile_coords) = if let Ok((head, tile_coords)) = head_query.single() {
-        (head, tile_coords)
-    } else {
-        return;
-    };
-    let bit_iters: Vec<usize> = if head.is_expanding {
-        bits.iter().map(|bit| bit.pos).collect()
-    } else {
-        (0..2).collect()
-    };
-    let player_coods = bit_iters
-        .iter()
-        .map(|i| tile_coords.tile_pos - IVec2::new(*i as i32, 0))
-        .collect::<Vec<IVec2>>();
-    for (_, pos, entity) in goals {
-        if player_coods.contains(&pos.tile_pos) {
-            commands.entity(entity).insert(StageCompleted);
-            next_stage.write(NextStage);
         }
     }
 }

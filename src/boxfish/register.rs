@@ -3,10 +3,7 @@ use bevy::prelude::*;
 use crate::prelude::*;
 use crate::{
     aquarium::{IncorrectBit, LogiKind, LogiRegister},
-    boxfish::{
-        BooleanImage, BoxfishRegister,
-        movement::{OnMoved, collide_with},
-    },
+    boxfish::{BooleanImage, BoxfishRegister},
 };
 
 #[derive(Event)]
