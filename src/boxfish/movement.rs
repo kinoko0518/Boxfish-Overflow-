@@ -4,6 +4,7 @@ pub mod input;
 
 use crate::boxfish::{BoxfishRegister, PLAYER_LAYER, movement::input::player_input};
 use crate::prelude::*;
+use crate::stage_manager::StageInfo;
 use bevy::prelude::*;
 pub use collision::PlayerCollidedAnimation;
 
@@ -16,7 +17,9 @@ impl Plugin for MovementPlugin {
             (
                 collision::collided_animation,
                 collision::goal_detection_system,
-                expansion::body_system,
+                expansion::get_expand_input,
+                expansion::on_expanding,
+                expansion::on_shrinking,
                 boxfish_moving,
                 regist_movement_history,
                 undo,
@@ -73,16 +76,16 @@ pub fn undo(
 pub fn boxfish_moving(
     mut commands: Commands,
     time: Res<Time>,
-    mut queries: ParamSet<(
-        Query<(&mut Transform, &mut TileCoords, Entity, &Head), Without<PlayerCollidedAnimation>>,
-        Query<&TileCoords, With<Collidable>>,
-    )>,
+    mut player_query: Query<
+        (&mut Transform, &mut TileCoords, Entity, &Head),
+        Without<PlayerCollidedAnimation>,
+    >,
+    stage_info: Res<StageInfo>,
     mut on_moved: EventWriter<OnMoved>,
     body_query: Query<&BitIter, With<Body>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
 ) {
-    let wall_positions: Vec<IVec2> = queries.p1().iter().map(|c| c.tile_pos).collect();
-    if let Ok((mut transform, mut tile, entity, head)) = queries.p0().single_mut() {
+    if let Ok((mut transform, mut tile, entity, head)) = player_query.single_mut() {
         let body_length: usize = body_query
             .iter()
             .map(|bit_iter| 1 + if head.is_expanding { bit_iter.pos } else { 1 })
@@ -104,7 +107,7 @@ pub fn boxfish_moving(
                     do_collide(
                         &(tile.tile_pos - IVec2::new(iter as i32, 0)),
                         &direction,
-                        &wall_positions,
+                        &stage_info.collisions,
                     )
                 });
                 if !was_collided {

@@ -45,6 +45,15 @@ pub fn collide_with(original: &IVec2, travel: &Travel, target: &IVec2) -> bool {
 pub fn do_collide(original: &IVec2, travel: &Travel, target: &[IVec2]) -> bool {
     target.iter().any(|t| collide_with(original, travel, t))
 }
+/// 複数の対象に対し、どこで衝突するかを取得する
+pub fn collide_at(original: &IVec2, travel: &Travel, target: &[IVec2]) -> Option<IVec2> {
+    for route in travel.get_route(*original) {
+        if target.contains(&route) {
+            return Some(route);
+        }
+    }
+    return None;
+}
 
 pub fn goal_detection_system(
     mut commands: Commands,

@@ -5,7 +5,8 @@ pub struct AquariumPlugin;
 
 impl Plugin for AquariumPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<AquariumResource>()
+        app.add_event::<ConstructionCompleted>()
+            .init_resource::<AquariumResource>()
             .add_systems(Startup, init_aquarium_resource)
             .add_systems(Update, highlight_incorrect_bits)
             .add_systems(Update, goal_swaying)
@@ -70,6 +71,9 @@ pub struct Goal;
 #[derive(Component)]
 pub struct StageCompleted;
 
+#[derive(Event)]
+pub struct ConstructionCompleted;
+
 #[derive(Resource, Default)]
 pub struct AquariumResource {
     tile_sprite: Handle<Image>,
@@ -110,12 +114,14 @@ pub fn parse_aquarium(
     tile_resource: Res<AquariumResource>,
     old_tiles: Query<Entity, With<Tiles>>,
     mut on_loaded: EventReader<ConstructAquarium>,
+    mut construction_completed: EventWriter<ConstructionCompleted>,
 ) {
     if let Some(aq) = on_loaded.read().next() {
         for t in old_tiles {
             commands.entity(t).despawn();
         }
         chars_into_tiles(&aq.content, commands, tile_resource);
+        construction_completed.write(ConstructionCompleted);
     }
 }
 

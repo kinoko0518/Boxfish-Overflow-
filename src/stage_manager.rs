@@ -1,6 +1,11 @@
 use bevy::{audio::Volume, prelude::*};
 use serde::{Deserialize, Serialize};
 
+use crate::{
+    aquarium::ConstructionCompleted,
+    prelude::{Collidable, TileCoords},
+};
+
 pub struct StageManagerPlugin;
 
 impl Plugin for StageManagerPlugin {
@@ -9,8 +14,16 @@ impl Plugin for StageManagerPlugin {
             .add_event::<GameClear>()
             .add_event::<NextStage>()
             .init_resource::<StageManager>()
+            .init_resource::<StageInfo>()
             .add_systems(Startup, setup_stage_manager)
-            .add_systems(Update, (call_next_aquarium, soundeffect_on_stage_loaded));
+            .add_systems(
+                Update,
+                (
+                    call_next_aquarium,
+                    soundeffect_on_stage_loaded,
+                    analyse_stage,
+                ),
+            );
     }
 }
 
@@ -27,6 +40,11 @@ pub struct StageManager {
     pub stages: Vec<&'static str>,
     pub index: usize,
     pub on_loaded_soundeffect: Handle<AudioSource>,
+}
+
+#[derive(Resource, Default)]
+pub struct StageInfo {
+    pub collisions: Vec<IVec2>,
 }
 
 const STAGE_0: &'static str = include_str!("../assets/stages/stage_0.toml");
@@ -91,5 +109,18 @@ pub fn soundeffect_on_stage_loaded(
                 ..default()
             },
         ));
+    }
+}
+
+pub fn analyse_stage(
+    mut stage_info: ResMut<StageInfo>,
+    mut construction_completed: EventReader<ConstructionCompleted>,
+    collisions: Query<&TileCoords, With<Collidable>>,
+) {
+    for _ in construction_completed.read() {
+        stage_info.collisions = collisions
+            .iter()
+            .map(|c| c.tile_pos)
+            .collect::<Vec<IVec2>>();
     }
 }
