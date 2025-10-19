@@ -26,7 +26,7 @@ pub fn get_expand_input(
                 &tile_coords.tile_pos,
                 &Travel {
                     direction: Direction::X,
-                    amount: -(body_len as i32),
+                    amount: -((body_len as i32) + 1),
                 },
                 &stage_info.collisions,
             ) {
@@ -34,15 +34,9 @@ pub fn get_expand_input(
                 None => None,
             };
             // BodyにExpandingコンポーネントを追加
-            for (_, _, tail, entity) in body_query {
+            for (_, _, _, entity) in body_query {
                 commands.entity(entity).insert(Expanding {
-                    collided_at: match collided_at {
-                        Some(at) => match tail {
-                            Some(_) => Some(at - 1),
-                            None => Some(at - 2),
-                        },
-                        None => collided_at,
-                    },
+                    collided_at: collided_at,
                 });
             }
         }
@@ -64,11 +58,17 @@ const EXPAND_SHRINK_DURATION: f32 = 0.1;
 /// ハコフグくんが伸びる処理
 pub fn on_expanding(
     time: Res<Time>,
-    query: Query<(&BitIter, &Expanding, &mut Transform), With<Body>>,
+    query: Query<(&BitIter, &Expanding, &mut Transform, Option<&Tail>), With<Body>>,
 ) {
-    for (bit_iter, expanding, mut transform) in query {
+    for (bit_iter, expanding, mut transform, tail) in query {
         let iter = match expanding.collided_at {
-            Some(col_at) => std::cmp::min(col_at, bit_iter.pos + 1),
+            Some(col_at) => std::cmp::min(
+                match tail {
+                    Some(_) => col_at - 1,
+                    None => col_at - 2,
+                },
+                bit_iter.pos + 1,
+            ),
             None => bit_iter.pos + 1,
         };
         let ideal_x = -((iter * TILE_SIZE) as f32);
