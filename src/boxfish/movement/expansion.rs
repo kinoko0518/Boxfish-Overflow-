@@ -1,4 +1,8 @@
-use crate::{boxfish::movement::collision::collide_at, prelude::*, stage_manager::StageInfo};
+use crate::{
+    boxfish::movement::{PlayerCollidedAnimation, collision::collide_at},
+    prelude::*,
+    stage_manager::StageInfo,
+};
 use bevy::prelude::*;
 
 /// Bodyにつけられるコンポーネント
@@ -13,7 +17,7 @@ pub struct Expanding {
 pub fn get_expand_input(
     mut commands: Commands,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    head_query: Query<(&mut Head, &TileCoords)>,
+    mut head_query: Query<(&mut Head, &TileCoords)>,
     stage_info: Res<StageInfo>,
     body_query: Query<(&Body, &BitIter, Option<&Tail>, Entity)>,
 ) {
@@ -40,16 +44,20 @@ pub fn get_expand_input(
                 });
             }
         }
+        // 頭のフラグを更新
+        for (mut head, _) in &mut head_query {
+            head.is_expanding = true;
+        }
     }
     // Shiftが離されたらExpandingコンポーネントを削除
     if keyboard_input.just_released(KeyCode::ShiftLeft) {
         for (_, _, _, entity) in body_query {
             commands.entity(entity).remove::<Expanding>();
         }
-    }
-    // 頭のフラグを更新
-    for (mut head, _) in head_query {
-        head.is_expanding = keyboard_input.pressed(KeyCode::ShiftLeft);
+        // 頭のフラグを更新
+        for (mut head, _) in &mut head_query {
+            head.is_expanding = false;
+        }
     }
 }
 
@@ -57,9 +65,13 @@ const EXPAND_SHRINK_DURATION: f32 = 0.1;
 
 /// ハコフグくんが伸びる処理
 pub fn on_expanding(
+    mut commands: Commands,
     time: Res<Time>,
     query: Query<(&BitIter, &Expanding, &mut Transform, Option<&Tail>), With<Body>>,
+    exp_query: Query<Entity, With<Expanding>>,
+    mut head_query: Query<(&mut Head, Entity)>,
 ) {
+    let max_iter = query.iter().map(|q| q.0.pos).max().unwrap_or(0);
     for (bit_iter, expanding, mut transform, tail) in query {
         let iter = match expanding.collided_at {
             Some(col_at) => std::cmp::min(
@@ -75,6 +87,24 @@ pub fn on_expanding(
         let duration = time.delta_secs() / EXPAND_SHRINK_DURATION * (TILE_SIZE as f32);
         if transform.translation.x - duration < ideal_x {
             transform.translation.x = ideal_x;
+            // 壁にぶつかって伸びきったなら、伸びたのと逆方向に驚き収縮する
+            if expanding.collided_at.is_some() & (bit_iter.pos == max_iter) {
+                for exp_entity in exp_query {
+                    commands.entity(exp_entity).remove::<Expanding>();
+                }
+                for (mut head, head_entity) in &mut head_query {
+                    commands
+                        .entity(head_entity)
+                        .insert(PlayerCollidedAnimation {
+                            travel: Travel {
+                                direction: Direction::X,
+                                amount: 1,
+                            },
+                            progress: 0.,
+                        });
+                    head.is_expanding = false;
+                }
+            }
         } else {
             transform.translation.x -= duration;
         }

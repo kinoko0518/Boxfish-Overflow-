@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::stage_manager::NextStage;
-use bevy::prelude::*;
+use bevy::{audio::Volume, prelude::*};
 use std::f32::consts::PI;
 
 use crate::aquarium::{Goal, StageCompleted};
@@ -9,6 +9,18 @@ use crate::aquarium::{Goal, StageCompleted};
 pub struct PlayerCollidedAnimation {
     pub travel: Travel,
     pub progress: f32,
+}
+
+#[derive(Resource, Default)]
+pub struct CollisionSoundEffect {
+    collided: Handle<AudioSource>,
+}
+
+pub fn init_collision_sound_effect(
+    mut sound_effect: ResMut<CollisionSoundEffect>,
+    asset_server: Res<AssetServer>,
+) {
+    sound_effect.collided = asset_server.load("embedded://sound_effects/collided.ogg");
 }
 
 /// プレイヤーの衝突アニメーション
@@ -23,12 +35,22 @@ pub fn collided_animation(
         ),
         With<Head>,
     >,
+    sound_effect: Res<CollisionSoundEffect>,
 ) {
     if let Ok((mut transform, mut collided_anim, tcoords, entity)) = query.single_mut() {
         let halfed_travel = collided_anim.travel.into_ivec2().as_vec2() / 2.0 * (TILE_SIZE as f32);
         let anim = halfed_travel * collided_anim.progress.sin();
         transform.translation = (tcoords.into_vec2() + anim).extend(0.);
 
+        if collided_anim.progress == 0. {
+            commands.spawn((
+                AudioPlayer::new(sound_effect.collided.clone()),
+                PlaybackSettings {
+                    volume: Volume::Linear(0.3),
+                    ..default()
+                },
+            ));
+        }
         if collided_anim.progress > PI {
             commands.entity(entity).remove::<PlayerCollidedAnimation>();
         } else {

@@ -2,6 +2,7 @@ pub mod collision;
 pub mod expansion;
 pub mod input;
 
+use crate::boxfish::movement::collision::CollisionSoundEffect;
 use crate::boxfish::{BoxfishRegister, PLAYER_LAYER, movement::input::player_input};
 use crate::prelude::*;
 use crate::stage_manager::StageInfo;
@@ -12,19 +13,22 @@ pub struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<OnMoved>().add_systems(
-            Update,
-            (
-                collision::collided_animation,
-                collision::goal_detection_system,
-                expansion::get_expand_input,
-                expansion::on_expanding,
-                expansion::on_shrinking,
-                boxfish_moving,
-                regist_movement_history,
-                undo,
-            ),
-        );
+        app.init_resource::<CollisionSoundEffect>()
+            .add_event::<OnMoved>()
+            .add_systems(Startup, collision::init_collision_sound_effect)
+            .add_systems(
+                Update,
+                (
+                    collision::collided_animation,
+                    collision::goal_detection_system,
+                    expansion::get_expand_input,
+                    expansion::on_expanding,
+                    expansion::on_shrinking,
+                    boxfish_moving,
+                    regist_movement_history,
+                    undo,
+                ),
+            );
     }
 }
 

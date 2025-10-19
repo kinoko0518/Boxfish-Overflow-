@@ -1,2 +1,3 @@
 効果音ラボ様 - 電子レンジでチン(assets/sound_effects/load_stage.ogg)
+効果音ラボ様 - パフ(assets/sound_effects/collided.ogg)
 LittleLimit様 - k8x12(assets/fonts/k8x12.ttf)
