@@ -2,10 +2,14 @@ pub mod collision;
 pub mod expansion;
 pub mod input;
 
-use crate::boxfish::movement::collision::CollisionSoundEffect;
-use crate::boxfish::{BoxfishRegister, PLAYER_LAYER, movement::input::player_input};
-use crate::prelude::*;
-use crate::stage_manager::StageInfo;
+use crate::{
+    boxfish::{
+        BoxfishRegister, PLAYER_LAYER, movement::collision::CollisionSoundEffect,
+        movement::input::player_input,
+    },
+    prelude::*,
+    stage_manager::StageInfo,
+};
 use bevy::prelude::*;
 pub use collision::PlayerCollidedAnimation;
 
@@ -106,12 +110,27 @@ pub fn boxfish_moving(
             transform.translation.y = target_pos.y;
 
             let direction = player_input(&keyboard_input);
+            let semi_included_collisions = if !head.is_expanding {
+                let collisions: Vec<IVec2> = stage_info
+                    .collisions
+                    .iter()
+                    .chain(&stage_info.semicollisions)
+                    .map(|c| *c)
+                    .collect();
+                Some(collisions)
+            } else {
+                None
+            };
+
             if direction.amount != 0 {
                 let was_collided = (0..(body_length + 1)).any(|iter| {
                     do_collide(
                         &(tile.tile_pos - IVec2::new(iter as i32, 0)),
                         &direction,
-                        &stage_info.collisions,
+                        match &semi_included_collisions {
+                            Some(s) => s,
+                            None => &stage_info.collisions,
+                        },
                     )
                 });
                 if !was_collided {

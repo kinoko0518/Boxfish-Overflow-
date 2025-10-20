@@ -2,7 +2,7 @@ use bevy::{audio::Volume, prelude::*};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    aquarium::ConstructionCompleted,
+    aquarium::{ConstructionCompleted, SemiCollidable},
     prelude::{Collidable, TileCoords},
 };
 
@@ -45,6 +45,7 @@ pub struct StageManager {
 #[derive(Resource, Default)]
 pub struct StageInfo {
     pub collisions: Vec<IVec2>,
+    pub semicollisions: Vec<IVec2>,
 }
 
 const STAGE_0: &'static str = include_str!("../assets/stages/stage_0.toml");
@@ -116,9 +117,14 @@ pub fn analyse_stage(
     mut stage_info: ResMut<StageInfo>,
     mut construction_completed: EventReader<ConstructionCompleted>,
     collisions: Query<&TileCoords, With<Collidable>>,
+    semicollisions: Query<&TileCoords, With<SemiCollidable>>,
 ) {
     for _ in construction_completed.read() {
         stage_info.collisions = collisions
+            .iter()
+            .map(|c| c.tile_pos)
+            .collect::<Vec<IVec2>>();
+        stage_info.semicollisions = semicollisions
             .iter()
             .map(|c| c.tile_pos)
             .collect::<Vec<IVec2>>();
