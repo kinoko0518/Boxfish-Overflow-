@@ -2,7 +2,7 @@ use crate::boxfish::{BooleanImage, visual::PlayerImage};
 use crate::prelude::*;
 use bevy::prelude::*;
 
-/// ゲーム開始時に一度だけ呼び出され、プレイヤーの頭やカメラなどの
+/// ゲーム開始時に一度だけ呼び出され、プレイヤーの頭などの
 /// ゲームを通して削除されないものを配置し、最初のステージを読み込む。
 pub fn aquarium_setup(mut commands: Commands, player_image: Res<PlayerImage>) {
     commands.spawn((
@@ -17,12 +17,6 @@ pub fn aquarium_setup(mut commands: Commands, player_image: Res<PlayerImage>) {
             tile_pos: IVec2::new(0, 0),
         },
     ));
-    commands
-        .spawn((Camera2d, Transform::from_xyz(0., 0., 0.)))
-        .insert(Projection::Orthographic(OrthographicProjection {
-            scale: 0.5,
-            ..OrthographicProjection::default_2d()
-        }));
 }
 
 /// 新しく読み込まれたステージを適用

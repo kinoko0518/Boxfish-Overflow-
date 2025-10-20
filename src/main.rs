@@ -5,6 +5,7 @@
 
 mod aquarium;
 mod boxfish;
+mod camera;
 pub mod prelude;
 mod stage_manager;
 mod styling;
@@ -16,8 +17,8 @@ use bevy_embedded_assets::EmbeddedAssetPlugin;
 use boxfish::PlayerPlugin;
 
 use crate::{
-    aquarium::AquariumPlugin, stage_manager::StageManagerPlugin, styling::StylingPlugin,
-    ui::UIPlugin,
+    aquarium::AquariumPlugin, camera::CameraPlugin, stage_manager::StageManagerPlugin,
+    styling::StylingPlugin, ui::UIPlugin,
 };
 
 fn main() {
@@ -29,6 +30,7 @@ fn main() {
         .add_plugins(StageManagerPlugin)
         .add_plugins(StylingPlugin)
         .add_plugins(PlayerPlugin)
+        .add_plugins(CameraPlugin)
         .add_plugins(UIPlugin)
         .add_plugins(AquariumPlugin)
         .run();

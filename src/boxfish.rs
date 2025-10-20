@@ -1,4 +1,3 @@
-pub mod camera;
 pub mod construction;
 pub mod movement;
 pub mod register;
@@ -27,7 +26,6 @@ impl Plugin for PlayerPlugin {
                     construction::update_bits,
                     visual::face_manager,
                     register::hightlight_collided_gate,
-                    camera::camera_adjust,
                 ),
             )
             .add_systems(
