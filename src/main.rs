@@ -16,6 +16,13 @@ use bevy::prelude::*;
 use bevy_embedded_assets::EmbeddedAssetPlugin;
 use boxfish::PlayerPlugin;
 
+#[derive(States, Default, Debug, Clone, Hash, PartialEq, Eq)]
+enum MacroStates {
+    #[default]
+    MainMenu,
+    GamePlay,
+}
+
 use crate::{
     aquarium::AquariumPlugin, camera::CameraPlugin, stage_manager::StageManagerPlugin,
     styling::StylingPlugin, ui::UIPlugin,
@@ -26,6 +33,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(ImagePlugin {
             default_sampler: ImageSamplerDescriptor::nearest(),
         }))
+        .init_state::<MacroStates>()
         .add_plugins(EmbeddedAssetPlugin::default())
         .add_plugins(StageManagerPlugin)
         .add_plugins(StylingPlugin)
