@@ -35,22 +35,22 @@ impl Travel {
 }
 
 pub fn player_input(keyboard_input: &Res<ButtonInput<KeyCode>>) -> Travel {
-    if keyboard_input.just_pressed(KeyCode::KeyW) {
+    if keyboard_input.pressed(KeyCode::KeyW) {
         Travel {
             direction: Direction::Y,
             amount: 1,
         }
-    } else if keyboard_input.just_pressed(KeyCode::KeyS) {
+    } else if keyboard_input.pressed(KeyCode::KeyS) {
         Travel {
             direction: Direction::Y,
             amount: -1,
         }
-    } else if keyboard_input.just_pressed(KeyCode::KeyA) {
+    } else if keyboard_input.pressed(KeyCode::KeyA) {
         Travel {
             direction: Direction::X,
             amount: -1,
         }
-    } else if keyboard_input.just_pressed(KeyCode::KeyD) {
+    } else if keyboard_input.pressed(KeyCode::KeyD) {
         Travel {
             direction: Direction::X,
             amount: 1,
