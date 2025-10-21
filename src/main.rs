@@ -17,7 +17,8 @@ use bevy_embedded_assets::EmbeddedAssetPlugin;
 use boxfish::PlayerPlugin;
 
 #[derive(States, Default, Debug, Clone, Hash, PartialEq, Eq)]
-enum MacroStates {
+#[states(scoped_entities)]
+pub enum MacroStates {
     #[default]
     MainMenu,
     GamePlay,

@@ -6,13 +6,13 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<StageCentre>()
+        app.init_resource::<CamRes>()
             .add_systems(Startup, construct_camera)
-            .add_systems(Update, get_stage_centre)
-            .add_systems(Update, move_to_ideal);
+            .add_systems(Update, (get_stage_centre, update_ideal, move_to_ideal));
     }
 }
 
+#[derive(PartialEq, Clone, Default)]
 struct IdealCamStat {
     pos: Vec3,
     magnif: f32,
@@ -21,7 +21,10 @@ struct IdealCamStat {
 const MAIN_MENU_CAM_POS: Vec3 = Vec3::new(-300., 0., 0.);
 
 #[derive(Resource, Default)]
-pub struct StageCentre {
+pub struct CamRes {
+    last: IdealCamStat,
+    now: IdealCamStat,
+    duration: f32,
     centre: Vec3,
 }
 
@@ -35,7 +38,7 @@ pub fn construct_camera(mut commands: Commands) {
 }
 
 pub fn get_stage_centre(
-    mut centre: ResMut<StageCentre>,
+    mut centre: ResMut<CamRes>,
     mut event_reader: EventReader<ConstructAquarium>,
 ) {
     if let Some(event) = event_reader.read().next() {
@@ -49,49 +52,41 @@ pub fn get_stage_centre(
     }
 }
 
-const CAM_SPEED: f32 = 200.;
-const MAGNIF_CHANGE_SPEED: f32 = 2.;
-
-pub fn move_to_ideal(
-    time: Res<Time>,
-    state: Res<State<MacroStates>>,
-    mut query: Query<(&mut Transform, &mut Projection), With<Camera2d>>,
-    centre: Res<StageCentre>,
-) {
+pub fn update_ideal(state: Res<State<MacroStates>>, mut cam_res: ResMut<CamRes>) {
     let ideal = match state.get() {
         MacroStates::MainMenu => IdealCamStat {
-            pos: MAIN_MENU_CAM_POS + centre.centre,
+            pos: MAIN_MENU_CAM_POS + cam_res.centre,
             magnif: 0.75,
         },
         MacroStates::GamePlay => IdealCamStat {
-            pos: centre.centre,
+            pos: cam_res.centre,
             magnif: 0.5,
         },
     };
-    for (mut transform, mut projection) in &mut query {
-        let pos_difference = ideal.pos - transform.translation;
-        let duration = pos_difference.normalize() * CAM_SPEED * time.delta_secs();
+    if cam_res.now != ideal {
+        cam_res.last = cam_res.now.clone();
+        cam_res.now = ideal;
+        cam_res.duration = 0.;
+    }
+}
 
-        if pos_difference.length() > duration.length() {
-            // 通り過ぎないとき
-            transform.translation += duration;
-        } else {
-            // 通り過ぎるとき
-            transform.translation = ideal.pos;
-        }
-        // 拡大率を変更
-        if let Projection::Orthographic(ref mut orth) = *projection {
-            if orth.scale != ideal.magnif {
-                let displacement =
-                    (orth.scale - ideal.magnif).signum() * MAGNIF_CHANGE_SPEED * time.delta_secs();
-                if (orth.scale - displacement).signum() == displacement.signum() {
-                    // 通り過ぎないとき
-                    orth.scale -= displacement;
-                } else {
-                    // 通り過ぎるとき
-                    orth.scale = ideal.magnif;
-                }
+pub fn move_to_ideal(
+    time: Res<Time>,
+    mut query: Query<(&mut Transform, &mut Projection), With<Camera2d>>,
+    mut cam_res: ResMut<CamRes>,
+) {
+    for (mut transform, mut projection) in &mut query {
+        if cam_res.duration < 1.0 {
+            // 位置を変更
+            transform.translation =
+                cam_res.last.pos + (cam_res.now.pos - cam_res.last.pos) * cam_res.duration;
+            // 拡大率を変更
+            if let Projection::Orthographic(ref mut orth) = *projection {
+                orth.scale = cam_res.last.magnif
+                    + (cam_res.now.magnif - cam_res.last.magnif) * cam_res.duration;
             }
         }
+        // durationを加算（1秒で完了）
+        cam_res.duration += time.delta_secs();
     }
 }

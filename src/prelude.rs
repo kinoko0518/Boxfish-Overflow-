@@ -1,4 +1,5 @@
 pub use crate::{
+    MacroStates,
     aquarium::Collidable,
     boxfish::{
         BitIter, Body, BoxfishRegister, Head, PLAYER_LAYER, Player, Tail,

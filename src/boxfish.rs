@@ -26,11 +26,9 @@ impl Plugin for PlayerPlugin {
                     construction::update_bits,
                     visual::face_manager,
                     register::hightlight_collided_gate,
+                    register::register_system,
+                    register::bit_visualise,
                 ),
-            )
-            .add_systems(
-                Update,
-                (register::register_system, register::bit_visualise).chain(),
             );
     }
 }

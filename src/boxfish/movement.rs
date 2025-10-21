@@ -23,15 +23,21 @@ impl Plugin for MovementPlugin {
             .add_systems(
                 Update,
                 (
-                    collision::collided_animation,
-                    collision::goal_detection_system,
-                    expansion::get_expand_input,
                     expansion::on_expanding,
                     expansion::on_shrinking,
+                    collision::collided_animation,
+                ),
+            )
+            .add_systems(
+                Update,
+                (
+                    collision::goal_detection_system,
+                    expansion::get_expand_input,
                     boxfish_moving,
                     regist_movement_history,
                     undo,
-                ),
+                )
+                    .run_if(in_state(MacroStates::GamePlay)),
             );
     }
 }

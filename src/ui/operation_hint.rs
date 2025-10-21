@@ -1,4 +1,4 @@
-use crate::ui::UICommonResource;
+use crate::{MacroStates, ui::UICommonResource};
 use bevy::prelude::*;
 
 #[derive(Resource, Default)]
@@ -19,26 +19,33 @@ pub fn construct_ui(
     oper_hint_res: Res<OperationHintUI>,
 ) {
     commands
-        .spawn(Node {
-            width: Val::Percent(100.),
-            height: Val::Percent(100.),
-            align_items: AlignItems::FlexEnd,
-            justify_content: JustifyContent::FlexEnd,
-            ..default()
-        })
+        .spawn((
+            Node {
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
+                align_items: AlignItems::FlexEnd,
+                justify_content: JustifyContent::FlexEnd,
+                ..default()
+            },
+            StateScoped(MacroStates::GamePlay),
+        ))
         .with_children(|parent| {
             parent
-                .spawn(Node {
-                    justify_content: JustifyContent::FlexEnd,
-                    align_items: AlignItems::Center,
-                    padding: UiRect::all(Val::Vw(3.)),
-                    flex_direction: FlexDirection::Column,
-                    ..default()
-                })
+                .spawn((
+                    Node {
+                        justify_content: JustifyContent::FlexEnd,
+                        align_items: AlignItems::Center,
+                        padding: UiRect::all(Val::Vw(3.)),
+                        flex_direction: FlexDirection::Column,
+                        ..default()
+                    },
+                    StateScoped(MacroStates::GamePlay),
+                ))
                 .with_child((
                     Text::new("イドウ".to_string()),
                     TextColor::BLACK,
                     ucr.text_font.clone(),
+                    StateScoped(MacroStates::GamePlay),
                 ))
                 .with_child((
                     ImageNode {
@@ -49,11 +56,13 @@ pub fn construct_ui(
                         width: Val::Vw(PERCENT_PER_PIXEL * 48.),
                         ..default()
                     },
+                    StateScoped(MacroStates::GamePlay),
                 ))
                 .with_child((
                     Text::new("ノビル".to_string()),
                     TextColor::BLACK,
                     ucr.text_font.clone(),
+                    StateScoped(MacroStates::GamePlay),
                 ))
                 .with_child((
                     ImageNode {
@@ -64,6 +73,7 @@ pub fn construct_ui(
                         width: Val::Vw(PERCENT_PER_PIXEL * 32.),
                         ..default()
                     },
+                    StateScoped(MacroStates::GamePlay),
                 ));
         });
 }

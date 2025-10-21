@@ -18,26 +18,31 @@ pub struct StageIndexDisplay;
 
 pub fn ui_construction(mut commands: Commands, ucr: Res<UICommonResource>) {
     commands
-        .spawn(Node {
-            width: Val::Percent(100.),
-            height: Val::Percent(100.),
-            align_items: AlignItems::Baseline,
-            justify_content: JustifyContent::FlexStart,
-            flex_direction: FlexDirection::Column,
-            padding: UiRect::all(Val::Vw(3.)),
-            ..default()
-        })
+        .spawn((
+            Node {
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
+                align_items: AlignItems::Baseline,
+                justify_content: JustifyContent::FlexStart,
+                flex_direction: FlexDirection::Column,
+                padding: UiRect::all(Val::Vw(3.)),
+                ..default()
+            },
+            StateScoped(MacroStates::GamePlay),
+        ))
         .with_child((
             Text::new(String::new()),
             TextColor::BLACK,
             ucr.text_font.clone(),
             StageIndexDisplay,
+            StateScoped(MacroStates::GamePlay),
         ))
         .with_child((
             Text::new(String::new()),
             TextColor::BLACK,
             ucr.text_font.clone(),
             LUMessage,
+            StateScoped(MacroStates::GamePlay),
         ));
 }
 
