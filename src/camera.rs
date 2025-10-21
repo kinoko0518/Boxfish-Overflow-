@@ -8,23 +8,15 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CamRes>()
             .add_systems(Startup, construct_camera)
-            .add_systems(Update, (get_stage_centre, update_ideal, move_to_ideal));
+            .add_systems(Update, (get_stage_centre, move_to_ideal));
     }
-}
-
-#[derive(PartialEq, Clone, Default)]
-struct IdealCamStat {
-    pos: Vec3,
-    magnif: f32,
 }
 
 const MAIN_MENU_CAM_POS: Vec3 = Vec3::new(-300., 0., 0.);
 
 #[derive(Resource, Default)]
 pub struct CamRes {
-    last: IdealCamStat,
-    now: IdealCamStat,
-    duration: f32,
+    progress: f32,
     centre: Vec3,
 }
 
@@ -52,41 +44,29 @@ pub fn get_stage_centre(
     }
 }
 
-pub fn update_ideal(state: Res<State<MacroStates>>, mut cam_res: ResMut<CamRes>) {
-    let ideal = match state.get() {
-        MacroStates::MainMenu => IdealCamStat {
-            pos: MAIN_MENU_CAM_POS + cam_res.centre,
-            magnif: 0.75,
-        },
-        MacroStates::GamePlay => IdealCamStat {
-            pos: cam_res.centre,
-            magnif: 0.5,
-        },
-    };
-    if cam_res.now != ideal {
-        cam_res.last = cam_res.now.clone();
-        cam_res.now = ideal;
-        cam_res.duration = 0.;
-    }
-}
+const OPEN_CLOSE_DURATION: f32 = 0.5;
 
 pub fn move_to_ideal(
     time: Res<Time>,
+    state: Res<State<MacroStates>>,
     mut query: Query<(&mut Transform, &mut Projection), With<Camera2d>>,
     mut cam_res: ResMut<CamRes>,
 ) {
     for (mut transform, mut projection) in &mut query {
-        if cam_res.duration < 1.0 {
+        if cam_res.progress < 1.0 {
             // 位置を変更
-            transform.translation =
-                cam_res.last.pos + (cam_res.now.pos - cam_res.last.pos) * cam_res.duration;
+            transform.translation = cam_res.centre + MAIN_MENU_CAM_POS * cam_res.progress;
             // 拡大率を変更
             if let Projection::Orthographic(ref mut orth) = *projection {
-                orth.scale = cam_res.last.magnif
-                    + (cam_res.now.magnif - cam_res.last.magnif) * cam_res.duration;
+                orth.scale = 0.5 + 0.25 * cam_res.progress;
             }
         }
-        // durationを加算（1秒で完了）
-        cam_res.duration += time.delta_secs();
+        // このフレームで変更されるprogressの絶対値
+        let travel = time.delta_secs() / OPEN_CLOSE_DURATION;
+        // 0.~1.の範囲でprogressを再代入
+        cam_res.progress = match state.get() {
+            &MacroStates::GamePlay => (0. as f32).max(cam_res.progress - travel),
+            &MacroStates::MainMenu => (1. as f32).min(cam_res.progress + travel),
+        }
     }
 }

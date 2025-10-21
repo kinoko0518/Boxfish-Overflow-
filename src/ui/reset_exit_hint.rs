@@ -1,4 +1,4 @@
-use super::UICommonResource;
+use super::UIResource;
 
 use crate::prelude::*;
 use bevy::prelude::*;
@@ -16,7 +16,7 @@ pub struct LUMessage;
 #[derive(Component)]
 pub struct StageIndexDisplay;
 
-pub fn ui_construction(mut commands: Commands, ucr: Res<UICommonResource>) {
+pub fn ui_construction(mut commands: Commands, ucr: Res<UIResource>) {
     commands
         .spawn((Node {
             width: Val::Percent(100.),

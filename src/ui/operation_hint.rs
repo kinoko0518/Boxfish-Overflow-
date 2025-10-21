@@ -1,23 +1,8 @@
-use crate::{MacroStates, ui::UICommonResource};
+use super::PERCENT_PER_PIXEL;
+use crate::{MacroStates, ui::UIResource};
 use bevy::prelude::*;
 
-#[derive(Resource, Default)]
-pub struct OperationHintUI {
-    wasd: Handle<Image>,
-    shift: Handle<Image>,
-}
-
-pub fn init_resource(mut res: ResMut<OperationHintUI>, asset_server: Res<AssetServer>) {
-    res.wasd = asset_server.load("embedded://ui/wasd.png");
-    res.shift = asset_server.load("embedded://ui/shift.png");
-}
-
-const PERCENT_PER_PIXEL: f32 = 6. / 32.;
-pub fn construct_ui(
-    mut commands: Commands,
-    ucr: Res<UICommonResource>,
-    oper_hint_res: Res<OperationHintUI>,
-) {
+pub fn construct_ui(mut commands: Commands, ucr: Res<UIResource>, oper_hint_res: Res<UIResource>) {
     commands
         .spawn((
             Node {

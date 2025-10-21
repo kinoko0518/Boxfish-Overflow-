@@ -7,13 +7,16 @@ use bevy::prelude::*;
 
 pub struct UIPlugin;
 
+const PERCENT_PER_PIXEL: f32 = 6. / 32.;
+
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<UICommonResource>()
+        app.init_resource::<UIResource>()
             .init_resource::<reset_exit_hint::LUMessageConstainer>()
-            .init_resource::<operation_hint::OperationHintUI>()
-            .add_systems(Startup, (init_ucr, operation_hint::init_resource).chain())
-            .add_systems(Startup, reset_exit_hint::ui_construction)
+            .add_systems(
+                Startup,
+                (init_ucr, reset_exit_hint::ui_construction).chain(),
+            )
             .add_systems(OnEnter(MacroStates::MainMenu), main_menu::construct_ui)
             .add_systems(OnEnter(MacroStates::GamePlay), operation_hint::construct_ui)
             .add_systems(
@@ -29,18 +32,24 @@ impl Plugin for UIPlugin {
     }
 }
 
-// UIで汎用的に使われるデータを読み込み・保管
+// UIで使われるデータを読み込み・保管
 #[derive(Resource, Default)]
-pub struct UICommonResource {
+pub struct UIResource {
     font: Handle<Font>,
     text_font: TextFont,
+    wasd: Handle<Image>,
+    shift: Handle<Image>,
+    logo: Handle<Image>,
 }
 
-pub fn init_ucr(mut ucr: ResMut<UICommonResource>, asset_server: Res<AssetServer>) {
+pub fn init_ucr(mut ucr: ResMut<UIResource>, asset_server: Res<AssetServer>) {
     ucr.font = asset_server.load("fonts/k8x12.ttf");
     ucr.text_font = TextFont {
         font: ucr.font.clone(),
         font_size: 32.,
         ..default()
     };
+    ucr.wasd = asset_server.load("embedded://ui/wasd.png");
+    ucr.shift = asset_server.load("embedded://ui/shift.png");
+    ucr.logo = asset_server.load("embedded://ui/logo.png");
 }

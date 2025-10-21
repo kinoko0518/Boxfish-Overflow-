@@ -131,7 +131,6 @@ pub fn boxfish_moving(
                 let was_collided = (0..(body_length + 1)).any(|iter| {
                     collision.do_collide(&(tile.tile_pos - IVec2::new(iter as i32, 0)), &direction)
                 });
-                println!("///////////// Collision /////////////\n{}", collision);
                 if !was_collided {
                     // 衝突しなかったなら移動
                     tile.tile_pos += direction.into_ivec2();

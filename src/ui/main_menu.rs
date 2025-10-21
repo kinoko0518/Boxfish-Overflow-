@@ -1,4 +1,4 @@
-use super::UICommonResource;
+use super::{PERCENT_PER_PIXEL, UIResource};
 use crate::prelude::*;
 use bevy::prelude::*;
 
@@ -8,7 +8,7 @@ pub struct StartButton;
 #[derive(Component)]
 pub struct EndGameButton;
 
-pub fn construct_ui(mut commands: Commands, ucr: Res<UICommonResource>) {
+pub fn construct_ui(mut commands: Commands, ucr: Res<UIResource>) {
     let menu_font = TextFont {
         font: ucr.font.clone(),
         font_size: 48.,
@@ -21,26 +21,46 @@ pub fn construct_ui(mut commands: Commands, ucr: Res<UICommonResource>) {
                 height: Val::Percent(100.),
                 padding: UiRect::all(Val::Vw(3.)),
                 align_items: AlignItems::Baseline,
-                justify_content: JustifyContent::Center,
+                justify_content: JustifyContent::FlexStart,
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
             StateScoped(MacroStates::MainMenu),
         ))
-        .with_child((
-            Button,
-            StartButton,
-            TextColor::BLACK,
-            Text::new("ハジメル"),
-            menu_font.clone(),
-        ))
-        .with_child((
-            Button,
-            EndGameButton,
-            TextColor::BLACK,
-            Text::new("オワル"),
-            menu_font.clone(),
-        ));
+        .with_children(|parent| {
+            parent.spawn((
+                ImageNode {
+                    image: ucr.logo.clone(),
+                    ..default()
+                },
+                Node {
+                    width: Val::Vw(PERCENT_PER_PIXEL * 64.),
+                    ..default()
+                },
+            ));
+            parent
+                .spawn(Node {
+                    height: Val::Percent(100.),
+                    align_items: AlignItems::FlexStart,
+                    justify_content: JustifyContent::Center,
+                    flex_direction: FlexDirection::Column,
+                    ..default()
+                })
+                .with_child((
+                    Button,
+                    StartButton,
+                    TextColor::BLACK,
+                    Text::new("ハジメル"),
+                    menu_font.clone(),
+                ))
+                .with_child((
+                    Button,
+                    EndGameButton,
+                    TextColor::BLACK,
+                    Text::new("オワル"),
+                    menu_font.clone(),
+                ));
+        });
 }
 
 pub fn start_button(
