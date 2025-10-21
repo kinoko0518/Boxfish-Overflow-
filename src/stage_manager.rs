@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     aquarium::{ConstructionCompleted, SemiCollidable},
-    prelude::{Collidable, TileCoords},
+    prelude::{Collidable, Collision, TileCoords},
 };
 
 pub struct StageManagerPlugin;
@@ -16,14 +16,8 @@ impl Plugin for StageManagerPlugin {
             .init_resource::<StageManager>()
             .init_resource::<StageInfo>()
             .add_systems(Startup, setup_stage_manager)
-            .add_systems(
-                Update,
-                (
-                    call_next_aquarium,
-                    soundeffect_on_stage_loaded,
-                    analyse_stage,
-                ),
-            );
+            .add_systems(Update, (call_next_aquarium, soundeffect_on_stage_loaded))
+            .add_systems(PostUpdate, analyse_stage);
     }
 }
 
@@ -44,8 +38,8 @@ pub struct StageManager {
 
 #[derive(Resource, Default)]
 pub struct StageInfo {
-    pub collisions: Vec<IVec2>,
-    pub semicollisions: Vec<IVec2>,
+    pub collisions: Collision,
+    pub semicollisions: Collision,
 }
 
 const STAGE_0: &'static str = include_str!("../assets/stages/stage_0.toml");
@@ -120,13 +114,17 @@ pub fn analyse_stage(
     semicollisions: Query<&TileCoords, With<SemiCollidable>>,
 ) {
     for _ in construction_completed.read() {
-        stage_info.collisions = collisions
-            .iter()
-            .map(|c| c.tile_pos)
-            .collect::<Vec<IVec2>>();
-        stage_info.semicollisions = semicollisions
-            .iter()
-            .map(|c| c.tile_pos)
-            .collect::<Vec<IVec2>>();
+        stage_info.collisions = Collision::from(
+            collisions
+                .iter()
+                .map(|c| c.tile_pos)
+                .collect::<Vec<IVec2>>(),
+        );
+        stage_info.semicollisions = Collision::from(
+            semicollisions
+                .iter()
+                .map(|c| c.tile_pos)
+                .collect::<Vec<IVec2>>(),
+        );
     }
 }

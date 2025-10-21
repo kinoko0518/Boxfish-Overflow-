@@ -1,8 +1,4 @@
-use crate::{
-    boxfish::movement::{PlayerCollidedAnimation, collision::collide_at},
-    prelude::*,
-    stage_manager::StageInfo,
-};
+use crate::{boxfish::movement::PlayerCollidedAnimation, prelude::*, stage_manager::StageInfo};
 use bevy::prelude::*;
 
 /// Bodyにつけられるコンポーネント
@@ -27,13 +23,12 @@ pub fn get_expand_input(
             // 尻尾含めたBodyの最大のBitIter、すなわち体の長さを取得
             let body_len = body_query.iter().map(|b| b.1.pos).max().unwrap_or(0);
             // 衝突位置を取得
-            let collided_at = match collide_at(
+            let collided_at = match stage_info.collisions.collide_at(
                 &tile_coords.tile_pos,
                 &Travel {
                     direction: Direction::X,
                     amount: -((body_len as i32) + 1),
                 },
-                &stage_info.collisions,
             ) {
                 Some(at) => Some((tile_coords.tile_pos - at).x as usize),
                 None => None,

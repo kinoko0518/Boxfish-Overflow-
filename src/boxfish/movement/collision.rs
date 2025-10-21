@@ -1,9 +1,93 @@
 use crate::prelude::*;
 use crate::stage_manager::NextStage;
 use bevy::{audio::Volume, prelude::*};
-use std::f32::consts::PI;
+use itertools::Itertools;
+use std::{f32::consts::PI, ops::Add};
 
 use crate::aquarium::{Goal, StageCompleted};
+
+/// 単一の対象に対して衝突判定を行う
+pub fn collide_with(original: &IVec2, travel: &Travel, target: &IVec2) -> bool {
+    travel.get_route(*original).contains(target)
+}
+
+#[derive(Default, Clone)]
+pub struct Collision {
+    collision: Vec<IVec2>,
+}
+
+impl Add for Collision {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            collision: self
+                .collision
+                .clone()
+                .into_iter()
+                .chain(rhs.collision.clone().into_iter())
+                .unique()
+                .collect::<Vec<IVec2>>(),
+        }
+    }
+}
+
+impl From<Vec<IVec2>> for Collision {
+    fn from(value: Vec<IVec2>) -> Self {
+        Self { collision: value }
+    }
+}
+
+impl Collision {
+    /// 複数の対象に対して衝突判定を行う
+    pub fn do_collide(&self, original: &IVec2, travel: &Travel) -> bool {
+        self.collision
+            .iter()
+            .any(|t| collide_with(original, travel, t))
+    }
+    /// 複数の対象に対し、どこで衝突するかを取得する
+    pub fn collide_at(&self, original: &IVec2, travel: &Travel) -> Option<IVec2> {
+        for route in travel.get_route(*original) {
+            if self.collision.contains(&route) {
+                return Some(route);
+            }
+        }
+        return None;
+    }
+}
+
+impl std::fmt::Display for Collision {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let x_iter = self.collision.iter().map(|c| c.x);
+        let y_iter = self.collision.iter().map(|c| c.y);
+
+        let max = IVec2::new(
+            x_iter.clone().max().unwrap_or(0),
+            y_iter.clone().max().unwrap_or(0),
+        );
+        let min = IVec2::new(
+            x_iter.clone().min().unwrap_or(0),
+            y_iter.clone().min().unwrap_or(0),
+        );
+
+        let mut result = String::new();
+        for y in min.y..(max.y + 1) {
+            // 上下さかさまにレンダリングされないようyに変更を行う
+            let y = (max.y - 1) - y;
+            for x in min.x..(max.x + 1) {
+                let coords = IVec2::new(x, y);
+                if self.collision.contains(&coords) {
+                    result.push('#');
+                } else {
+                    result.push(' ');
+                }
+                if x == max.x {
+                    result.push('\n');
+                }
+            }
+        }
+        write!(f, "{}", result)
+    }
+}
 
 #[derive(Component)]
 pub struct PlayerCollidedAnimation {
@@ -57,24 +141,6 @@ pub fn collided_animation(
             collided_anim.progress += 0.1;
         }
     }
-}
-
-/// 単一の対象に対して衝突判定を行う
-pub fn collide_with(original: &IVec2, travel: &Travel, target: &IVec2) -> bool {
-    travel.get_route(*original).contains(target)
-}
-/// 複数の対象に対して衝突判定を行う
-pub fn do_collide(original: &IVec2, travel: &Travel, target: &[IVec2]) -> bool {
-    target.iter().any(|t| collide_with(original, travel, t))
-}
-/// 複数の対象に対し、どこで衝突するかを取得する
-pub fn collide_at(original: &IVec2, travel: &Travel, target: &[IVec2]) -> Option<IVec2> {
-    for route in travel.get_route(*original) {
-        if target.contains(&route) {
-            return Some(route);
-        }
-    }
-    return None;
 }
 
 pub fn goal_detection_system(

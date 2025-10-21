@@ -18,24 +18,20 @@ pub struct StageIndexDisplay;
 
 pub fn ui_construction(mut commands: Commands, ucr: Res<UICommonResource>) {
     commands
-        .spawn((
-            Node {
-                width: Val::Percent(100.),
-                height: Val::Percent(100.),
-                align_items: AlignItems::Baseline,
-                justify_content: JustifyContent::FlexStart,
-                flex_direction: FlexDirection::Column,
-                padding: UiRect::all(Val::Vw(3.)),
-                ..default()
-            },
-            StateScoped(MacroStates::GamePlay),
-        ))
+        .spawn((Node {
+            width: Val::Percent(100.),
+            height: Val::Percent(100.),
+            align_items: AlignItems::Baseline,
+            justify_content: JustifyContent::FlexStart,
+            flex_direction: FlexDirection::Column,
+            padding: UiRect::all(Val::Vw(3.)),
+            ..default()
+        },))
         .with_child((
             Text::new(String::new()),
             TextColor::BLACK,
             ucr.text_font.clone(),
             StageIndexDisplay,
-            StateScoped(MacroStates::GamePlay),
         ))
         .with_child((
             Text::new(String::new()),
@@ -97,13 +93,21 @@ pub fn countup_duration(
 }
 
 pub fn stage_index_display(
-    mut query: Query<&mut Text, With<StageIndexDisplay>>,
+    state: Res<State<MacroStates>>,
+    mut text_query: Query<&mut Text, With<StageIndexDisplay>>,
+    mut visibility_query: Query<&mut Visibility, With<StageIndexDisplay>>,
     stage_manager: Res<StageManager>,
     mut construct_aquarium: EventReader<ConstructAquarium>,
 ) {
     for ca in construct_aquarium.read() {
-        for mut text in &mut query {
+        for mut text in &mut text_query {
             text.0 = format!("ステージ{} - {}", stage_manager.index + 1, ca.stage_name);
         }
+    }
+    for mut visibility in &mut visibility_query {
+        *visibility = match state.get() {
+            MacroStates::GamePlay => Visibility::Visible,
+            MacroStates::MainMenu => Visibility::Hidden,
+        };
     }
 }

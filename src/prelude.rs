@@ -5,7 +5,7 @@ pub use crate::{
         BitIter, Body, BoxfishRegister, Head, PLAYER_LAYER, Player, Tail,
         movement::{
             OnMoved,
-            collision::{collide_with, do_collide},
+            collision::{Collision, collide_with},
             input::{Direction, Travel},
         },
     },

@@ -116,33 +116,28 @@ pub fn boxfish_moving(
             transform.translation.y = target_pos.y;
 
             let direction = player_input(&keyboard_input);
-            let semi_included_collisions = if !head.is_expanding {
-                let collisions: Vec<IVec2> = stage_info
-                    .collisions
-                    .iter()
-                    .chain(&stage_info.semicollisions)
-                    .map(|c| *c)
-                    .collect();
-                Some(collisions)
-            } else {
-                None
-            };
 
             if direction.amount != 0 {
+                // 膨らんでいるか、縮んでいるかで衝突判定が異なるため
+                let collision = if !head.is_expanding {
+                    // 膨らんでいなければゲート、ビット(Semicollidable)
+                    // と壁(Collidable)両方を対象にする
+                    (&stage_info).collisions.clone() + (&stage_info).semicollisions.clone()
+                } else {
+                    // 膨らんでいれば壁(Collidable)のみを対象にする
+                    stage_info.collisions.clone()
+                };
+                // 頭から尾まで衝突判定を行い、いずれかが衝突していれば衝突
                 let was_collided = (0..(body_length + 1)).any(|iter| {
-                    do_collide(
-                        &(tile.tile_pos - IVec2::new(iter as i32, 0)),
-                        &direction,
-                        match &semi_included_collisions {
-                            Some(s) => s,
-                            None => &stage_info.collisions,
-                        },
-                    )
+                    collision.do_collide(&(tile.tile_pos - IVec2::new(iter as i32, 0)), &direction)
                 });
+                println!("///////////// Collision /////////////\n{}", collision);
                 if !was_collided {
+                    // 衝突しなかったなら移動
                     tile.tile_pos += direction.into_ivec2();
                     on_moved.write(OnMoved { travel: direction });
                 } else {
+                    // 衝突したならぶつかったアニメーションを再生する
                     commands.entity(entity).insert(PlayerCollidedAnimation {
                         progress: 0.,
                         travel: direction,

@@ -31,21 +31,17 @@ pub fn construct_ui(
         ))
         .with_children(|parent| {
             parent
-                .spawn((
-                    Node {
-                        justify_content: JustifyContent::FlexEnd,
-                        align_items: AlignItems::Center,
-                        padding: UiRect::all(Val::Vw(3.)),
-                        flex_direction: FlexDirection::Column,
-                        ..default()
-                    },
-                    StateScoped(MacroStates::GamePlay),
-                ))
+                .spawn((Node {
+                    justify_content: JustifyContent::FlexEnd,
+                    align_items: AlignItems::Center,
+                    padding: UiRect::all(Val::Vw(3.)),
+                    flex_direction: FlexDirection::Column,
+                    ..default()
+                },))
                 .with_child((
                     Text::new("イドウ".to_string()),
                     TextColor::BLACK,
                     ucr.text_font.clone(),
-                    StateScoped(MacroStates::GamePlay),
                 ))
                 .with_child((
                     ImageNode {
@@ -56,13 +52,11 @@ pub fn construct_ui(
                         width: Val::Vw(PERCENT_PER_PIXEL * 48.),
                         ..default()
                     },
-                    StateScoped(MacroStates::GamePlay),
                 ))
                 .with_child((
                     Text::new("ノビル".to_string()),
                     TextColor::BLACK,
                     ucr.text_font.clone(),
-                    StateScoped(MacroStates::GamePlay),
                 ))
                 .with_child((
                     ImageNode {
@@ -73,7 +67,6 @@ pub fn construct_ui(
                         width: Val::Vw(PERCENT_PER_PIXEL * 32.),
                         ..default()
                     },
-                    StateScoped(MacroStates::GamePlay),
                 ));
         });
 }
