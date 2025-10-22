@@ -13,12 +13,16 @@ impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<UIResource>()
             .init_resource::<reset_exit_hint::LUMessageConstainer>()
+            .add_systems(Startup, init_ucr)
+            .add_systems(PostStartup, reset_exit_hint::ui_construction)
             .add_systems(
-                Startup,
-                (init_ucr, reset_exit_hint::ui_construction).chain(),
+                OnEnter(MacroStates::MainMenu),
+                main_menu::construct_ui.after(init_ucr),
             )
-            .add_systems(OnEnter(MacroStates::MainMenu), main_menu::construct_ui)
-            .add_systems(OnEnter(MacroStates::GamePlay), operation_hint::construct_ui)
+            .add_systems(
+                OnEnter(MacroStates::GamePlay),
+                operation_hint::construct_ui.after(init_ucr),
+            )
             .add_systems(
                 Update,
                 (reset_exit_hint::countup_duration,).run_if(in_state(MacroStates::GamePlay)),

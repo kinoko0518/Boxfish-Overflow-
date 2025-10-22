@@ -8,7 +8,7 @@ pub struct StartButton;
 #[derive(Component)]
 pub struct EndGameButton;
 
-pub fn construct_ui(mut commands: Commands, ucr: Res<UIResource>) {
+pub fn construct_ui(mut commands: Commands, ucr: Res<UIResource>, asset_server: Res<AssetServer>) {
     let menu_font = TextFont {
         font: ucr.font.clone(),
         font_size: 48.,
@@ -30,11 +30,11 @@ pub fn construct_ui(mut commands: Commands, ucr: Res<UIResource>) {
         .with_children(|parent| {
             parent.spawn((
                 ImageNode {
-                    image: ucr.logo.clone(),
+                    image: asset_server.load("embedded://ui/logo.png"),
                     ..default()
                 },
                 Node {
-                    width: Val::Vw(PERCENT_PER_PIXEL * 64.),
+                    width: Val::Vw(PERCENT_PER_PIXEL * 192.),
                     ..default()
                 },
             ));
