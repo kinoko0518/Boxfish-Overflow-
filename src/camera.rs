@@ -44,7 +44,7 @@ pub fn get_stage_centre(
     }
 }
 
-const OPEN_CLOSE_DURATION: f32 = 0.5;
+const OPEN_CLOSE_DURATION: f32 = 0.3;
 
 pub fn move_to_ideal(
     time: Res<Time>,
@@ -53,12 +53,15 @@ pub fn move_to_ideal(
     mut cam_res: ResMut<CamRes>,
 ) {
     for (mut transform, mut projection) in &mut query {
+        let t = cam_res.progress;
+        let eased_progress = t * t * (3.0 - 2.0 * t);
+
         if cam_res.progress < 1.0 {
             // 位置を変更
-            transform.translation = cam_res.centre + MAIN_MENU_CAM_POS * cam_res.progress;
+            transform.translation = cam_res.centre + MAIN_MENU_CAM_POS * eased_progress;
             // 拡大率を変更
             if let Projection::Orthographic(ref mut orth) = *projection {
-                orth.scale = 0.5 + 0.25 * cam_res.progress;
+                orth.scale = 0.5 + 0.25 * eased_progress;
             }
         }
         // このフレームで変更されるprogressの絶対値

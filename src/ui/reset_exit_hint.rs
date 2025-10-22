@@ -6,7 +6,6 @@ use bevy::prelude::*;
 // 左(Left)上(Up)に表示されるメッセージの状態管理用リソース
 #[derive(Resource, Default)]
 pub struct LUMessageConstainer {
-    quit_duration: f32,
     reset_duration: f32,
 }
 
@@ -42,25 +41,15 @@ pub fn ui_construction(mut commands: Commands, ucr: Res<UIResource>) {
         ));
 }
 
-const QUIT_EXPECTED_PRESSTIME: f32 = 5.;
 const RESET_EXPECTED_PRESSTIME: f32 = 5.;
 pub fn countup_duration(
     lu_text_query: Query<&mut Text, With<LUMessage>>,
     mut lmc: ResMut<LUMessageConstainer>,
     key_input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut app_exit: EventWriter<AppExit>,
     stage_manager: Res<StageManager>,
     mut construct_aquarium: EventWriter<ConstructAquarium>,
 ) {
-    if key_input.pressed(KeyCode::Escape) {
-        lmc.quit_duration += time.delta_secs();
-        if lmc.quit_duration > QUIT_EXPECTED_PRESSTIME {
-            app_exit.write(AppExit::Success);
-        }
-    } else {
-        lmc.quit_duration = 0.;
-    }
     if key_input.pressed(KeyCode::KeyR) {
         lmc.reset_duration += time.delta_secs();
         if lmc.reset_duration > RESET_EXPECTED_PRESSTIME {
@@ -76,12 +65,7 @@ pub fn countup_duration(
         lmc.reset_duration = 0.;
     }
     for mut tex in lu_text_query {
-        if lmc.quit_duration > 0. {
-            tex.0 = format!(
-                "{}秒後に終了",
-                ((QUIT_EXPECTED_PRESSTIME - lmc.quit_duration) as usize + 1)
-            ) + &".".repeat(lmc.quit_duration as usize);
-        } else if lmc.reset_duration > 0. {
+        if lmc.reset_duration > 0. {
             tex.0 = format!(
                 "{}秒後にステージをリセット",
                 ((RESET_EXPECTED_PRESSTIME - lmc.reset_duration) as usize + 1)

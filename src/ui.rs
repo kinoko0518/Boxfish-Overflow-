@@ -32,7 +32,7 @@ impl Plugin for UIPlugin {
                 (main_menu::end_game_button, main_menu::start_button)
                     .run_if(in_state(MacroStates::MainMenu)),
             )
-            .add_systems(Update, reset_exit_hint::stage_index_display);
+            .add_systems(Update, (reset_exit_hint::stage_index_display, toggle_menu));
     }
 }
 
@@ -43,7 +43,6 @@ pub struct UIResource {
     text_font: TextFont,
     wasd: Handle<Image>,
     shift: Handle<Image>,
-    logo: Handle<Image>,
 }
 
 pub fn init_ucr(mut ucr: ResMut<UIResource>, asset_server: Res<AssetServer>) {
@@ -55,5 +54,17 @@ pub fn init_ucr(mut ucr: ResMut<UIResource>, asset_server: Res<AssetServer>) {
     };
     ucr.wasd = asset_server.load("embedded://ui/wasd.png");
     ucr.shift = asset_server.load("embedded://ui/shift.png");
-    ucr.logo = asset_server.load("embedded://ui/logo.png");
+}
+
+pub fn toggle_menu(
+    mut state_mut: ResMut<NextState<MacroStates>>,
+    state: ResMut<State<MacroStates>>,
+    key_input: Res<ButtonInput<KeyCode>>,
+) {
+    if key_input.just_pressed(KeyCode::Escape) {
+        match state.get() {
+            &MacroStates::GamePlay => state_mut.set(MacroStates::MainMenu),
+            &MacroStates::MainMenu => state_mut.set(MacroStates::GamePlay),
+        }
+    }
 }
