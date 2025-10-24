@@ -15,6 +15,7 @@ impl Plugin for PlayerPlugin {
         app.add_event::<register::GateCollidedAt>()
             .init_resource::<BooleanImage>()
             .init_resource::<PlayerImage>()
+            .init_resource::<ResultManager>()
             .add_plugins(MovementPlugin)
             .add_systems(
                 Startup,
@@ -66,3 +67,8 @@ pub struct Head {
 
 #[derive(Component)]
 pub struct Player;
+
+#[derive(Resource, Default)]
+pub struct ResultManager {
+    steps: usize,
+}

@@ -91,7 +91,7 @@ pub fn stage_index_display(
     for mut visibility in &mut visibility_query {
         *visibility = match state.get() {
             MacroStates::GamePlay => Visibility::Visible,
-            MacroStates::MainMenu => Visibility::Hidden,
+            _ => Visibility::Hidden,
         };
     }
 }

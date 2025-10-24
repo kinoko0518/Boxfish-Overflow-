@@ -1,6 +1,6 @@
 use super::{PERCENT_PER_PIXEL, UIResource};
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy::{audio::Volume, prelude::*};
 
 #[derive(Component)]
 pub struct StartButton;
@@ -85,6 +85,28 @@ pub fn end_game_button(
         match &i {
             &Interaction::Pressed => {
                 app_exit.write(AppExit::Success);
+            }
+            _ => (),
+        }
+    }
+}
+
+pub fn button_sounds(
+    mut commands: Commands,
+    query: Query<&Interaction, Changed<Interaction>>,
+    resource: Res<UIResource>,
+) {
+    for i in query {
+        let playback_style = PlaybackSettings {
+            volume: Volume::Linear(0.3),
+            ..default()
+        };
+        match i {
+            &Interaction::Pressed => {
+                commands.spawn((AudioPlayer(resource.pressed.clone()), playback_style));
+            }
+            &Interaction::Hovered => {
+                commands.spawn((AudioPlayer(resource.focused.clone()), playback_style));
             }
             _ => (),
         }

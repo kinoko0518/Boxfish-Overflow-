@@ -6,6 +6,7 @@
 mod aquarium;
 mod boxfish;
 mod camera;
+mod music;
 pub mod prelude;
 mod stage_manager;
 mod styling;
@@ -22,11 +23,11 @@ pub enum MacroStates {
     #[default]
     MainMenu,
     GamePlay,
+    GameClear,
 }
 
 use crate::{
-    aquarium::AquariumPlugin, camera::CameraPlugin, stage_manager::StageManagerPlugin,
-    styling::StylingPlugin, ui::UIPlugin,
+    aquarium::AquariumPlugin, camera::CameraPlugin, music::MusicPlugin, stage_manager::StageManagerPlugin, styling::StylingPlugin, ui::UIPlugin
 };
 
 fn main() {
@@ -42,5 +43,6 @@ fn main() {
         .add_plugins(CameraPlugin)
         .add_plugins(UIPlugin)
         .add_plugins(AquariumPlugin)
+        .add_plugins(MusicPlugin)
         .run();
 }
