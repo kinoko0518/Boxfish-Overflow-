@@ -47,6 +47,8 @@ pub fn update_bits(
     head.3.tile_pos = aquarium.player_origin;
     head.2.translation =
         (aquarium.player_origin.as_vec2() * (TILE_SIZE as f32)).extend(PLAYER_LAYER);
+    // 読み込み時点で膨らんでいるとおかしなことになるため、リセット
+    head.4.is_expanding = false;
 
     // 古いビットとしっぽを削除
     if let Some(children) = head.1 {

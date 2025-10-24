@@ -38,6 +38,10 @@ impl Plugin for UIPlugin {
                 )
                     .run_if(in_state(MacroStates::MainMenu)),
             )
+            .add_systems(
+                Update,
+                game_clear::return_to_main_menu_button.run_if(in_state(MacroStates::GameClear)),
+            )
             .add_systems(Update, (reset_exit_hint::stage_index_display, toggle_menu));
     }
 }

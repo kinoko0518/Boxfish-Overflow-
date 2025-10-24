@@ -1,6 +1,14 @@
 use bevy::prelude::*;
 
-use crate::{MacroStates, boxfish::ResultManager, ui::UIResource};
+use crate::{
+    MacroStates,
+    boxfish::ResultManager,
+    prelude::{ConstructAquarium, StageManager},
+    ui::UIResource,
+};
+
+#[derive(Component)]
+pub struct ReturnToMainMenu;
 
 pub fn construction(
     mut commands: Commands,
@@ -56,5 +64,35 @@ pub fn construction(
                 font_size: 48.,
                 ..default()
             },
+        ))
+        .with_child((
+            Text::new("クリックでタイトルに戻る"),
+            TextColor::WHITE,
+            TextFont {
+                font: ucr.font.clone(),
+                font_size: 48.,
+                ..default()
+            },
+            Button,
+            ReturnToMainMenu,
         ));
+}
+
+pub fn return_to_main_menu_button(
+    stage: Res<StageManager>,
+    mut construct_stage: EventWriter<ConstructAquarium>,
+    query: Query<&Interaction, (Changed<Interaction>, With<ReturnToMainMenu>)>,
+    mut state: ResMut<NextState<MacroStates>>,
+) {
+    for i in query {
+        match i {
+            Interaction::Pressed => {
+                construct_stage.write(
+                    toml::from_str::<ConstructAquarium>(stage.stages.first().unwrap()).unwrap(),
+                );
+                state.set(MacroStates::MainMenu);
+            }
+            _ => (),
+        }
+    }
 }
