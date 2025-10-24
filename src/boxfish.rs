@@ -70,5 +70,5 @@ pub struct Player;
 
 #[derive(Resource, Default)]
 pub struct ResultManager {
-    steps: usize,
+    pub steps: usize,
 }

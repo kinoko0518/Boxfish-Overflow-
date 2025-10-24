@@ -2,6 +2,7 @@ use bevy::{audio::Volume, prelude::*};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    MacroStates,
     aquarium::{ConstructionCompleted, SemiCollidable},
     prelude::{Collidable, Collision, TileCoords},
 };
@@ -11,7 +12,6 @@ pub struct StageManagerPlugin;
 impl Plugin for StageManagerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ConstructAquarium>()
-            .add_event::<GameClear>()
             .add_event::<NextStage>()
             .init_resource::<StageManager>()
             .init_resource::<StageInfo>()
@@ -65,16 +65,13 @@ pub fn setup_stage_manager(
 }
 
 #[derive(Event)]
-pub struct GameClear;
-
-#[derive(Event)]
 pub struct NextStage;
 
 pub fn call_next_aquarium(
     mut stage_manager: ResMut<StageManager>,
     mut construct_aquarium: EventWriter<ConstructAquarium>,
-    mut game_clear: EventWriter<GameClear>,
     mut next_stage: EventReader<NextStage>,
+    mut state: ResMut<NextState<MacroStates>>,
 ) {
     for _ in next_stage.read() {
         match stage_manager.stages.get(stage_manager.index + 1) {
@@ -85,7 +82,7 @@ pub fn call_next_aquarium(
                 stage_manager.index += 1;
             }
             None => {
-                game_clear.write(GameClear);
+                state.set(MacroStates::GameClear);
             }
         }
     }

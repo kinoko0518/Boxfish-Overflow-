@@ -1,3 +1,4 @@
+mod game_clear;
 mod main_menu;
 mod operation_hint;
 mod reset_exit_hint;
@@ -23,6 +24,7 @@ impl Plugin for UIPlugin {
                 OnEnter(MacroStates::GamePlay),
                 operation_hint::construct_ui.after(init_ucr),
             )
+            .add_systems(OnEnter(MacroStates::GameClear), game_clear::construction)
             .add_systems(
                 Update,
                 (reset_exit_hint::countup_duration,).run_if(in_state(MacroStates::GamePlay)),
@@ -54,7 +56,7 @@ pub struct UIResource {
 }
 
 pub fn init_ucr(mut ucr: ResMut<UIResource>, asset_server: Res<AssetServer>) {
-    ucr.font = asset_server.load("fonts/k8x12.ttf");
+    ucr.font = asset_server.load("embedded://fonts/k8x12.ttf");
     ucr.text_font = TextFont {
         font: ucr.font.clone(),
         font_size: 32.,
@@ -78,11 +80,11 @@ pub fn toggle_menu(
     if key_input.just_pressed(KeyCode::Escape) {
         match state.get() {
             &MacroStates::GamePlay => {
-                commands.spawn((AudioPlayer(ucr.menu_exit.clone())));
+                commands.spawn(AudioPlayer(ucr.menu_exit.clone()));
                 state_mut.set(MacroStates::MainMenu);
             }
             &MacroStates::MainMenu => {
-                commands.spawn((AudioPlayer(ucr.menu_enter.clone())));
+                commands.spawn(AudioPlayer(ucr.menu_enter.clone()));
                 state_mut.set(MacroStates::GamePlay);
             }
             _ => (),

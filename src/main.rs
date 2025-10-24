@@ -27,7 +27,8 @@ pub enum MacroStates {
 }
 
 use crate::{
-    aquarium::AquariumPlugin, camera::CameraPlugin, music::MusicPlugin, stage_manager::StageManagerPlugin, styling::StylingPlugin, ui::UIPlugin
+    aquarium::AquariumPlugin, camera::CameraPlugin, music::MusicPlugin,
+    stage_manager::StageManagerPlugin, styling::StylingPlugin, ui::UIPlugin,
 };
 
 fn main() {

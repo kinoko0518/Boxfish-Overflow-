@@ -4,8 +4,8 @@ pub mod input;
 
 use crate::{
     boxfish::{
-        BoxfishRegister, PLAYER_LAYER, movement::collision::CollisionSoundEffect,
-        movement::input::player_input,
+        BoxfishRegister, PLAYER_LAYER, ResultManager,
+        movement::{collision::CollisionSoundEffect, input::player_input},
     },
     prelude::*,
     stage_manager::StageInfo,
@@ -31,6 +31,7 @@ impl Plugin for MovementPlugin {
             .add_systems(
                 Update,
                 (
+                    step_counter,
                     collision::goal_detection_system,
                     expansion::get_expand_input,
                     boxfish_moving,
@@ -157,5 +158,11 @@ pub fn boxfish_moving(
                 transform.translation += Vec3::new(travel_in_frame.x, travel_in_frame.y, 0.0);
             }
         }
+    }
+}
+
+pub fn step_counter(mut on_moved: EventReader<OnMoved>, mut r_manager: ResMut<ResultManager>) {
+    for _ in on_moved.read() {
+        r_manager.steps += 1;
     }
 }
