@@ -21,14 +21,15 @@ impl Plugin for PlayerPlugin {
                 Startup,
                 (visual::assets_setup, construction::aquarium_setup).chain(),
             )
+            .add_systems(PreUpdate, construction::update_bits)
             .add_systems(
                 Update,
                 (
-                    construction::update_bits,
                     visual::face_manager,
                     register::hightlight_collided_gate,
                     register::register_system,
                     register::bit_visualise,
+                    reset_result.run_if(on_event::<NewGame>),
                 ),
             );
     }
@@ -71,4 +72,8 @@ pub struct Player;
 #[derive(Resource, Default)]
 pub struct ResultManager {
     pub steps: usize,
+}
+
+pub fn reset_result(mut r_manager: ResMut<ResultManager>) {
+    r_manager.steps = 0;
 }

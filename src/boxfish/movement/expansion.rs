@@ -19,8 +19,7 @@ pub fn get_expand_input(
     gamepad_query: Query<&Gamepad>,
 ) {
     const EXPAND_KEY: KeyCode = KeyCode::Enter;
-    // ----- 膨らむボタンが押されたときのフラグ -----
-    // キーボードの入力に限って
+    // 膨らむボタンが押されたときのフラグ
     let just_pressed = match gamepad_query.single() {
         Ok(gamepad) => gamepad.just_pressed(GamepadButton::East),
         Err(_) => false,
