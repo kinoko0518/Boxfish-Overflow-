@@ -4,7 +4,7 @@ mod operation_hint;
 mod reset_exit_hint;
 
 use crate::prelude::*;
-use bevy::prelude::*;
+use bevy::{audio::PlaybackMode, prelude::*};
 
 pub struct UIPlugin;
 
@@ -82,13 +82,17 @@ pub fn toggle_menu(
     ucr: Res<UIResource>,
 ) {
     if key_input.just_pressed(KeyCode::Escape) {
+        let playback_style = PlaybackSettings {
+            mode: PlaybackMode::Despawn,
+            ..default()
+        };
         match state.get() {
             &MacroStates::GamePlay => {
-                commands.spawn(AudioPlayer(ucr.menu_exit.clone()));
+                commands.spawn((AudioPlayer(ucr.menu_exit.clone()), playback_style.clone()));
                 state_mut.set(MacroStates::MainMenu);
             }
             &MacroStates::MainMenu => {
-                commands.spawn(AudioPlayer(ucr.menu_enter.clone()));
+                commands.spawn((AudioPlayer(ucr.menu_enter.clone()), playback_style.clone()));
                 state_mut.set(MacroStates::GamePlay);
             }
             _ => (),

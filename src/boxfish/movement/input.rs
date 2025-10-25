@@ -34,7 +34,34 @@ impl Travel {
     }
 }
 
-pub fn player_input(keyboard_input: &Res<ButtonInput<KeyCode>>) -> Travel {
+pub fn player_input(
+    keyboard_input: &Res<ButtonInput<KeyCode>>,
+    gamepad_input: &Query<&Gamepad>,
+) -> Travel {
+    // ゲームパッド関連の判定
+    match gamepad_input.single().ok() {
+        Some(gamepad) => {
+            const THREHOLD: f32 = 0.5;
+            if let Some(x) = gamepad.get(GamepadAxis::LeftStickX) {
+                if x.abs() > THREHOLD {
+                    return Travel {
+                        direction: Direction::X,
+                        amount: x.signum() as i32,
+                    };
+                }
+            }
+            if let Some(y) = gamepad.get(GamepadAxis::LeftStickY) {
+                if y.abs() > THREHOLD {
+                    return Travel {
+                        direction: Direction::Y,
+                        amount: y.signum() as i32,
+                    };
+                }
+            }
+        }
+        None => (),
+    }
+    // キーボードの処理
     if keyboard_input.pressed(KeyCode::KeyW) {
         Travel {
             direction: Direction::Y,

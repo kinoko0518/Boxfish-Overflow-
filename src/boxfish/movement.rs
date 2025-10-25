@@ -99,6 +99,7 @@ pub fn boxfish_moving(
     mut on_moved: EventWriter<OnMoved>,
     body_query: Query<&BitIter, With<Body>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
+    gamepad_input: Query<&Gamepad>,
 ) {
     if let Ok((mut transform, mut tile, entity, head)) = player_query.single_mut() {
         let body_length: usize = body_query
@@ -116,7 +117,7 @@ pub fn boxfish_moving(
             transform.translation.x = target_pos.x;
             transform.translation.y = target_pos.y;
 
-            let direction = player_input(&keyboard_input);
+            let direction = player_input(&keyboard_input, &gamepad_input);
 
             if direction.amount != 0 {
                 // 膨らんでいるか、縮んでいるかで衝突判定が異なるため

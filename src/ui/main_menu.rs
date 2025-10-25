@@ -1,6 +1,9 @@
 use super::{PERCENT_PER_PIXEL, UIResource};
 use crate::prelude::*;
-use bevy::{audio::Volume, prelude::*};
+use bevy::{
+    audio::{PlaybackMode, Volume},
+    prelude::*,
+};
 
 #[derive(Component)]
 pub struct StartButton;
@@ -99,6 +102,7 @@ pub fn button_sounds(
     for i in query {
         let playback_style = PlaybackSettings {
             volume: Volume::Linear(0.3),
+            mode: PlaybackMode::Despawn,
             ..default()
         };
         match i {

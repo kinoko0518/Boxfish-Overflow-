@@ -16,9 +16,22 @@ pub fn get_expand_input(
     mut head_query: Query<(&mut Head, &TileCoords)>,
     stage_info: Res<StageInfo>,
     body_query: Query<(&Body, &BitIter, Option<&Tail>, Entity)>,
+    gamepad_query: Query<&Gamepad>,
 ) {
     const EXPAND_KEY: KeyCode = KeyCode::Enter;
-    if keyboard_input.just_pressed(EXPAND_KEY) {
+    // ----- 膨らむボタンが押されたときのフラグ -----
+    // キーボードの入力に限って
+    let just_pressed = match gamepad_query.single() {
+        Ok(gamepad) => gamepad.just_pressed(GamepadButton::East),
+        Err(_) => false,
+    } | keyboard_input.just_pressed(EXPAND_KEY);
+    // 膨らむボタンが離されたときのフラグ
+    let just_released = match gamepad_query.single() {
+        Ok(gamepad) => gamepad.just_released(GamepadButton::East),
+        Err(_) => false,
+    } | keyboard_input.just_released(EXPAND_KEY);
+
+    if just_pressed {
         for (_, tile_coords) in &head_query {
             // 尻尾含めたBodyの最大のBitIter、すなわち体の長さを取得
             let body_len = body_query.iter().map(|b| b.1.pos).max().unwrap_or(0);
@@ -34,6 +47,7 @@ pub fn get_expand_input(
                 None => None,
             };
             // BodyにExpandingコンポーネントを追加
+            // キーボードでの処理
             for (_, _, _, entity) in body_query {
                 commands.entity(entity).insert(Expanding {
                     collided_at: collided_at,
@@ -46,7 +60,7 @@ pub fn get_expand_input(
         }
     }
     // Shiftが離されたらExpandingコンポーネントを削除
-    if keyboard_input.just_released(EXPAND_KEY) {
+    if just_released {
         for (_, _, _, entity) in body_query {
             commands.entity(entity).remove::<Expanding>();
         }

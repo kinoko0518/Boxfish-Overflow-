@@ -1,4 +1,7 @@
-use bevy::{audio::Volume, prelude::*};
+use bevy::{
+    audio::{PlaybackMode, Volume},
+    prelude::*,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -112,6 +115,7 @@ pub fn soundeffect_on_stage_loaded(
             AudioPlayer::new(stage_manager.on_loaded_soundeffect.clone()),
             PlaybackSettings {
                 volume: Volume::Linear(0.3),
+                mode: PlaybackMode::Despawn,
                 ..default()
             },
         ));
