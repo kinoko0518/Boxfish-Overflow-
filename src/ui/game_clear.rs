@@ -1,11 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    MacroStates,
-    boxfish::ResultManager,
-    prelude::{ConstructAquarium, StageManager},
-    ui::UIResource,
-};
+use crate::{MacroStates, boxfish::ResultManager, prelude::NewGame, ui::UIResource};
 
 #[derive(Component)]
 pub struct ReturnToMainMenu;
@@ -16,11 +11,11 @@ pub fn construction(
     ucr: Res<UIResource>,
 ) {
     let steps = result_manager.steps;
-    let (rank, prize) = if steps < 300 {
+    let (rank, prize) = if steps < 400 {
         ("S", "カントリーマアム2枚獲得！")
-    } else if steps < 350 {
+    } else if steps < 450 {
         ("A", "カントリーマアム1枚獲得！")
-    } else if steps < 400 {
+    } else if steps < 500 {
         ("B", "チョコ2個獲得！")
     } else {
         ("C", "チョコ1個獲得！")
@@ -79,17 +74,14 @@ pub fn construction(
 }
 
 pub fn return_to_main_menu_button(
-    stage: Res<StageManager>,
-    mut construct_stage: EventWriter<ConstructAquarium>,
+    mut construct_stage: EventWriter<NewGame>,
     query: Query<&Interaction, (Changed<Interaction>, With<ReturnToMainMenu>)>,
     mut state: ResMut<NextState<MacroStates>>,
 ) {
     for i in query {
         match i {
             Interaction::Pressed => {
-                construct_stage.write(
-                    toml::from_str::<ConstructAquarium>(stage.stages.first().unwrap()).unwrap(),
-                );
+                construct_stage.write(NewGame);
                 state.set(MacroStates::MainMenu);
             }
             _ => (),

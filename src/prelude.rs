@@ -9,7 +9,7 @@ pub use crate::{
             input::{Direction, Travel},
         },
     },
-    stage_manager::{ConstructAquarium, StageManager},
+    stage_manager::{ConstructAquarium, NewGame, StageManager},
 };
 use bevy::prelude::*;
 

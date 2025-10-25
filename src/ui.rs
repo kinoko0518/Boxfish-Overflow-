@@ -68,10 +68,10 @@ pub fn init_ucr(mut ucr: ResMut<UIResource>, asset_server: Res<AssetServer>) {
     };
     ucr.wasd = asset_server.load("embedded://ui/wasd.png");
     ucr.shift = asset_server.load("embedded://ui/shift.png");
-    ucr.focused = asset_server.load("embedded://sound_effects/ui_focused.mp3");
-    ucr.pressed = asset_server.load("embedded://sound_effects/ui_accepted.mp3");
-    ucr.menu_enter = asset_server.load("embedded://sound_effects/extend.mp3");
-    ucr.menu_exit = asset_server.load("embedded://sound_effects/shrink.mp3");
+    ucr.focused = asset_server.load("embedded://sound_effects/ui_focused.wav");
+    ucr.pressed = asset_server.load("embedded://sound_effects/ui_accepted.wav");
+    ucr.menu_enter = asset_server.load("embedded://sound_effects/extend.wav");
+    ucr.menu_exit = asset_server.load("embedded://sound_effects/shrink.wav");
 }
 
 pub fn toggle_menu(

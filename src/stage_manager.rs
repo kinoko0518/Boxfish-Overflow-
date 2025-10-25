@@ -13,13 +13,24 @@ impl Plugin for StageManagerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ConstructAquarium>()
             .add_event::<NextStage>()
+            .add_event::<NewGame>()
             .init_resource::<StageManager>()
             .init_resource::<StageInfo>()
-            .add_systems(Startup, setup_stage_manager)
-            .add_systems(Update, (call_next_aquarium, soundeffect_on_stage_loaded))
+            .add_systems(Startup, (setup_stage_manager, new_game).chain())
+            .add_systems(
+                Update,
+                (
+                    call_next_aquarium,
+                    soundeffect_on_stage_loaded,
+                    new_game.run_if(on_event::<NewGame>),
+                ),
+            )
             .add_systems(PostUpdate, analyse_stage);
     }
 }
+
+#[derive(Event)]
+pub struct NewGame;
 
 #[derive(Event, Clone, Serialize, Deserialize)]
 pub struct ConstructAquarium {
@@ -51,15 +62,18 @@ const STAGE_5: &'static str = include_str!("../assets/stages/stage_5.toml");
 const STAGE_6: &'static str = include_str!("../assets/stages/stage_6.toml");
 const STAGE_7: &'static str = include_str!("../assets/stages/stage_7.toml");
 
-pub fn setup_stage_manager(
-    mut stage: ResMut<StageManager>,
-    mut construct_stage: EventWriter<ConstructAquarium>,
-    asset_server: Res<AssetServer>,
-) {
+pub fn setup_stage_manager(mut stage: ResMut<StageManager>, asset_server: Res<AssetServer>) {
     stage.stages = vec![
         STAGE_0, STAGE_1, STAGE_2, STAGE_3, STAGE_4, STAGE_5, STAGE_6, STAGE_7,
     ];
     stage.on_loaded_soundeffect = asset_server.load("embedded://sound_effects/load_stage.ogg");
+}
+
+pub fn new_game(
+    mut stage: ResMut<StageManager>,
+    mut construct_stage: EventWriter<ConstructAquarium>,
+) {
+    stage.index = 0;
     construct_stage
         .write(toml::from_str(stage.stages.get(0).unwrap()).expect("Stage 0 is broken!"));
 }
