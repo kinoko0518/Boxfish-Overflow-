@@ -66,13 +66,13 @@ pub fn undo(
     head_query: Query<(&mut TileCoords, &mut Transform, &mut Head)>,
     bit_query: Query<&mut BoxfishRegister>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
+    gamepad: Query<&Gamepad>,
 ) {
-    let do_undo = keyboard_input
-        .get_pressed()
-        .any(|pressed| matches!(pressed, KeyCode::ControlLeft))
-        && keyboard_input
-            .get_just_pressed()
-            .any(|pressed| matches!(pressed, KeyCode::KeyZ));
+    let do_undo = match gamepad.single() {
+        Ok(gamepad) => gamepad.just_pressed(GamepadButton::South),
+        Err(_) => false,
+    } | keyboard_input.pressed(KeyCode::ControlLeft)
+        && keyboard_input.just_pressed(KeyCode::KeyZ);
     if do_undo {
         for (mut t_coords, mut transform, mut head) in head_query {
             if let Some(last) = head.history.pop() {

@@ -46,11 +46,16 @@ pub fn countup_duration(
     lu_text_query: Query<&mut Text, With<LUMessage>>,
     mut lmc: ResMut<LUMessageConstainer>,
     key_input: Res<ButtonInput<KeyCode>>,
+    gamepad: Query<&Gamepad>,
     time: Res<Time>,
     stage_manager: Res<StageManager>,
     mut construct_aquarium: EventWriter<ConstructAquarium>,
 ) {
-    if key_input.pressed(KeyCode::KeyR) {
+    let pressed = match gamepad.single() {
+        Ok(gamepad) => gamepad.pressed(GamepadButton::North),
+        Err(_) => false,
+    } | key_input.pressed(KeyCode::KeyR);
+    if pressed {
         lmc.reset_duration += time.delta_secs();
         if lmc.reset_duration > RESET_EXPECTED_PRESSTIME {
             construct_aquarium.write(
