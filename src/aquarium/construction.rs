@@ -100,7 +100,7 @@ pub fn chars_into_tiles(
                     commands.spawn(get_logigate((0, 4), LogiKind::Xor));
                 }
                 'G' => {
-                    commands.spawn(get_logigate((2, 0), LogiKind::Gate));
+                    commands.spawn(get_logigate((2, 0), LogiKind::Equal));
                 }
                 'U' => {
                     commands.spawn(get_logigate((0, 5), LogiKind::Undo));

@@ -26,8 +26,8 @@ impl Plugin for PlayerPlugin {
                 Update,
                 (
                     visual::face_manager,
-                    register::hightlight_collided_gate,
-                    register::register_system,
+                    register::hightlight_incorresponded_gate,
+                    register::process_gate_effect,
                     register::bit_visualise,
                     reset_result.run_if(on_event::<NewGame>),
                 ),

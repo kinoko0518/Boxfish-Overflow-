@@ -55,7 +55,7 @@ pub enum LogiKind {
     Not,
     Xor,
     Undo,
-    Gate,
+    Equal,
 }
 
 const TILE_LAYER: f32 = 0.;
