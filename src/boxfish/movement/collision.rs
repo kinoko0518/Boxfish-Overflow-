@@ -24,7 +24,7 @@ impl Add for Collision {
                 .collision
                 .clone()
                 .into_iter()
-                .chain(rhs.collision.clone().into_iter())
+                .chain(rhs.collision.clone())
                 .unique()
                 .collect::<Vec<IVec2>>(),
         }
@@ -46,12 +46,10 @@ impl Collision {
     }
     /// 複数の対象に対し、どこで衝突するかを取得する
     pub fn collide_at(&self, original: &IVec2, travel: &Travel) -> Option<IVec2> {
-        for route in travel.get_route(*original) {
-            if self.collision.contains(&route) {
-                return Some(route);
-            }
-        }
-        return None;
+        travel
+            .get_route(*original)
+            .into_iter()
+            .find(|&route| self.collision.contains(&route))
     }
 }
 

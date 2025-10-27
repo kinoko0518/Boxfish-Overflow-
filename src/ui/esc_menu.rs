@@ -11,7 +11,16 @@ pub struct StartButton;
 #[derive(Component)]
 pub struct EndGameButton;
 
-pub fn construct_ui(mut commands: Commands, ucr: Res<UIResource>, asset_server: Res<AssetServer>) {
+/// Constructs the menu shown when ESC key pressed on gameplayv, with those parts:
+///
+/// - The game logo
+/// - Start Game
+/// - Quit Game
+pub fn construct_esc_menu(
+    mut commands: Commands,
+    ucr: Res<UIResource>,
+    asset_server: Res<AssetServer>,
+) {
     let menu_font = TextFont {
         font: ucr.font.clone(),
         font_size: 48.,
@@ -28,7 +37,7 @@ pub fn construct_ui(mut commands: Commands, ucr: Res<UIResource>, asset_server: 
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
-            StateScoped(MacroStates::MainMenu),
+            StateScoped(MacroStates::ESCMenu),
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -66,30 +75,24 @@ pub fn construct_ui(mut commands: Commands, ucr: Res<UIResource>, asset_server: 
         });
 }
 
-pub fn start_button(
+pub fn on_start_button_clicked(
     query: Query<&Interaction, (Changed<Interaction>, With<StartButton>)>,
     mut macro_state: ResMut<NextState<MacroStates>>,
 ) {
     for i in query {
-        match &i {
-            &Interaction::Pressed => {
-                macro_state.set(MacroStates::GamePlay);
-            }
-            _ => (),
+        if *i == Interaction::Pressed {
+            macro_state.set(MacroStates::GamePlay);
         }
     }
 }
 
-pub fn end_game_button(
+pub fn on_quit_button_clicked(
     mut app_exit: EventWriter<AppExit>,
     query: Query<&Interaction, (Changed<Interaction>, With<EndGameButton>)>,
 ) {
     for i in query {
-        match &i {
-            &Interaction::Pressed => {
-                app_exit.write(AppExit::Success);
-            }
-            _ => (),
+        if i == &Interaction::Pressed {
+            app_exit.write(AppExit::Success);
         }
     }
 }
@@ -105,11 +108,11 @@ pub fn button_sounds(
             mode: PlaybackMode::Despawn,
             ..default()
         };
-        match i {
-            &Interaction::Pressed => {
+        match *i {
+            Interaction::Pressed => {
                 commands.spawn((AudioPlayer(resource.pressed.clone()), playback_style));
             }
-            &Interaction::Hovered => {
+            Interaction::Hovered => {
                 commands.spawn((AudioPlayer(resource.focused.clone()), playback_style));
             }
             _ => (),

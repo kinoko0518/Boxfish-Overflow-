@@ -53,7 +53,7 @@ pub fn register_system(
             .map(|g| (g.0.tile_pos, g.1.boolean, g.1.logikind))
             .collect();
         // 移動前の頭の位置
-        let head_coord_before_move = &head - travel.into_ivec2();
+        let head_coord_before_move = head - travel.into_ivec2();
 
         for (bit_iter, mut bit) in queries.p3().iter_mut() {
             let local_x_from_head = -(bit_iter.pos as i32) - 1;
@@ -61,7 +61,7 @@ pub fn register_system(
             // 移動前の座標を逆算し、そこからルート上の座標を求める
             let from = head_coord_before_move + IVec2::new(local_x_from_head, 0);
             for (gate_coords, gate_bit, logikind) in &gates {
-                if collide_with(&from, &travel, &gate_coords) {
+                if collide_with(&from, &travel, gate_coords) {
                     let now = bit.boolean;
                     match logikind {
                         LogiKind::And => {
@@ -103,10 +103,9 @@ pub fn register_system(
         // 一致した，しなかったに関わらず伸びていなければ弾く
         if let (Ok((mut head_mut, head)), Some(coords)) =
             (queries.p2().single_mut(), coords_after_process)
+            && head.is_expanding
         {
-            if head.is_expanding {
-                head_mut.tile_pos = coords;
-            }
+            head_mut.tile_pos = coords;
         }
     }
 }

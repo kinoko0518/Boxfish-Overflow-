@@ -6,7 +6,7 @@ use bevy::prelude::*;
 /// ゲームを通して削除されないものを配置し、最初のステージを読み込む。
 pub fn aquarium_setup(mut commands: Commands, player_image: Res<PlayerImage>) {
     commands.spawn((
-        player_image.from_index(2, 0),
+        player_image.index_to_sprite(2, 0),
         Transform::from_xyz(0., 0., PLAYER_LAYER),
         Head {
             is_expanding: false,
@@ -62,14 +62,14 @@ pub fn update_bits(
         for (iter, bit) in aquarium.player_defaultbits.iter().enumerate() {
             let id = commands
                 .spawn((
-                    player_image.from_index(1, 0),
+                    player_image.index_to_sprite(1, 0),
                     Transform::from_xyz(0., 0., PLAYER_LAYER),
                     Body,
                     BitIter { pos: iter },
                     Player,
                 ))
                 .with_child((
-                    boolean_image.from_y_to_sprite(0),
+                    boolean_image.y_to_sprite(0),
                     Transform::from_xyz(0., 0., PLAYER_LAYER),
                     BoxfishRegister {
                         boolean: *bit,
@@ -90,7 +90,7 @@ pub fn update_bits(
     // しっぽを追加
     let body_length = aquarium.player_defaultbits.len();
     head_command.with_child((
-        player_image.from_index(0, 0),
+        player_image.index_to_sprite(0, 0),
         Transform::from_translation(BitIter::get_position_on_the_length(body_length)),
         Body,
         BitIter { pos: body_length },

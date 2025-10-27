@@ -71,7 +71,7 @@ pub struct Player;
 
 #[derive(Resource, Default)]
 pub struct ResultManager {
-    pub steps: usize,
+    pub steps: u32,
 }
 
 pub fn reset_result(mut r_manager: ResMut<ResultManager>) {

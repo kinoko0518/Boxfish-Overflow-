@@ -35,22 +35,20 @@ pub fn get_expand_input(
             // 尻尾含めたBodyの最大のBitIter、すなわち体の長さを取得
             let body_len = body_query.iter().map(|b| b.1.pos).max().unwrap_or(0);
             // 衝突位置を取得
-            let collided_at = match stage_info.collisions.collide_at(
-                &tile_coords.tile_pos,
-                &Travel {
-                    direction: Direction::X,
-                    amount: -((body_len as i32) + 1),
-                },
-            ) {
-                Some(at) => Some((tile_coords.tile_pos - at).x as usize),
-                None => None,
-            };
+            let collided_at = stage_info
+                .collisions
+                .collide_at(
+                    &tile_coords.tile_pos,
+                    &Travel {
+                        direction: Direction::X,
+                        amount: -((body_len as i32) + 1),
+                    },
+                )
+                .map(|at| (tile_coords.tile_pos - at).x as usize);
             // BodyにExpandingコンポーネントを追加
             // キーボードでの処理
             for (_, _, _, entity) in body_query {
-                commands.entity(entity).insert(Expanding {
-                    collided_at: collided_at,
-                });
+                commands.entity(entity).insert(Expanding { collided_at });
             }
         }
         // 頭のフラグを更新

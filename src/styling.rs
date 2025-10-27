@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy::winit::WinitWindows;
-use image;
 use winit::window::Icon;
 
 const WINDOW_ICON: &[u8] = include_bytes!("../assets/boxfish/head.png");

@@ -12,22 +12,12 @@ mod stage_manager;
 mod styling;
 mod ui;
 
-use bevy::image::ImageSamplerDescriptor;
-use bevy::prelude::*;
+use bevy::{image::ImageSamplerDescriptor, prelude::*};
 use bevy_embedded_assets::EmbeddedAssetPlugin;
 use boxfish::PlayerPlugin;
 
-#[derive(States, Default, Debug, Clone, Hash, PartialEq, Eq)]
-#[states(scoped_entities)]
-pub enum MacroStates {
-    #[default]
-    MainMenu,
-    GamePlay,
-    GameClear,
-}
-
 use crate::{
-    aquarium::AquariumPlugin, camera::CameraPlugin, music::MusicPlugin,
+    aquarium::AquariumPlugin, camera::CameraPlugin, music::MusicPlugin, prelude::*,
     stage_manager::StageManagerPlugin, styling::StylingPlugin, ui::UIPlugin,
 };
 

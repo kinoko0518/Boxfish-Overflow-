@@ -124,7 +124,7 @@ pub fn boxfish_moving(
                 let collision = if !head.is_expanding {
                     // 膨らんでいなければゲート、ビット(Semicollidable)
                     // と壁(Collidable)両方を対象にする
-                    (&stage_info).collisions.clone() + (&stage_info).semicollisions.clone()
+                    stage_info.collisions.clone() + stage_info.semicollisions.clone()
                 } else {
                     // 膨らんでいれば壁(Collidable)のみを対象にする
                     stage_info.collisions.clone()

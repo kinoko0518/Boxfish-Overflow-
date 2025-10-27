@@ -13,7 +13,7 @@ pub struct PlayerImage {
 }
 
 impl PlayerImage {
-    pub fn from_index(&self, x: usize, y: usize) -> Sprite {
+    pub fn index_to_sprite(&self, x: usize, y: usize) -> Sprite {
         Sprite::from_atlas_image(self.image.clone(), self.index_to_atlas(x, y))
     }
     pub fn index_to_atlas(&self, x: usize, y: usize) -> TextureAtlas {
@@ -31,20 +31,20 @@ pub struct BooleanImage {
 }
 
 impl BooleanImage {
-    pub fn from_y_to_sprite(&self, y: usize) -> Sprite {
-        Sprite::from_atlas_image(self.image.clone(), self.from_y_to_atlas(y))
+    pub fn y_to_sprite(&self, y: usize) -> Sprite {
+        Sprite::from_atlas_image(self.image.clone(), self.y_to_atlas(y))
     }
-    fn from_y_to_atlas(&self, y: usize) -> TextureAtlas {
+    fn y_to_atlas(&self, y: usize) -> TextureAtlas {
         TextureAtlas {
             layout: self.atlas_layout.clone(),
             index: y,
         }
     }
     pub fn zero(&self) -> TextureAtlas {
-        self.from_y_to_atlas(0)
+        self.y_to_atlas(0)
     }
     pub fn one(&self) -> TextureAtlas {
-        self.from_y_to_atlas(10)
+        self.y_to_atlas(10)
     }
 }
 

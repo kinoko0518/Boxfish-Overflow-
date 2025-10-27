@@ -3,19 +3,17 @@ use super::UIResource;
 use crate::prelude::*;
 use bevy::prelude::*;
 
-// 左(Left)上(Up)に表示されるメッセージの状態管理用リソース
-#[derive(Resource, Default)]
-pub struct LUMessageConstainer {
+#[derive(Component)]
+pub struct ResetDurationDisplay {
     reset_duration: f32,
 }
 
 #[derive(Component)]
-pub struct LUMessage;
-
-#[derive(Component)]
 pub struct StageIndexDisplay;
 
-pub fn ui_construction(mut commands: Commands, ucr: Res<UIResource>) {
+/// Constructing stage index display and
+/// reset duration display on the upper left of a screen.
+pub fn upper_left_menu_construction(mut commands: Commands, ucr: Res<UIResource>) {
     commands
         .spawn((Node {
             width: Val::Percent(100.),
@@ -36,51 +34,58 @@ pub fn ui_construction(mut commands: Commands, ucr: Res<UIResource>) {
             Text::new(String::new()),
             TextColor::BLACK,
             ucr.text_font.clone(),
-            LUMessage,
+            ResetDurationDisplay { reset_duration: 0. },
             StateScoped(MacroStates::GamePlay),
         ));
 }
 
+/// With setting this constant, how many secs
+/// reset button must be keep pressed will be changed.
 const RESET_EXPECTED_PRESSTIME: f32 = 5.;
-pub fn countup_duration(
-    lu_text_query: Query<&mut Text, With<LUMessage>>,
-    mut lmc: ResMut<LUMessageConstainer>,
+
+/// Increament reset duration while reset button pressed.
+pub fn countup_reset_duration(
+    query: Query<(&mut Text, &mut ResetDurationDisplay)>,
     key_input: Res<ButtonInput<KeyCode>>,
     gamepad: Query<&Gamepad>,
     time: Res<Time>,
     stage_manager: Res<StageManager>,
     mut construct_aquarium: EventWriter<ConstructAquarium>,
 ) {
+    // Detect that was R on keyboard or North button on gamepad pressed.
     let pressed = match gamepad.single() {
         Ok(gamepad) => gamepad.pressed(GamepadButton::North),
         Err(_) => false,
     } | key_input.pressed(KeyCode::KeyR);
-    if pressed {
-        lmc.reset_duration += time.delta_secs();
-        if lmc.reset_duration > RESET_EXPECTED_PRESSTIME {
-            construct_aquarium.write(
-                toml::from_str::<ConstructAquarium>(
-                    stage_manager.stages.get(stage_manager.index).unwrap(),
-                )
-                .unwrap(),
-            );
-            lmc.reset_duration = 0.;
-        }
-    } else {
-        lmc.reset_duration = 0.;
-    }
-    for mut tex in lu_text_query {
-        if lmc.reset_duration > 0. {
-            tex.0 = format!(
+    for (mut text, mut duration) in query {
+        if pressed {
+            duration.reset_duration += time.delta_secs();
+            // If pressed time is greater than [RESET_EXPECTED_PRESSTIME],
+            // call the same stage as now, and reset pressed duration.
+            if duration.reset_duration > RESET_EXPECTED_PRESSTIME {
+                construct_aquarium.write(
+                    toml::from_str::<ConstructAquarium>(
+                        stage_manager.stages.get(stage_manager.index).unwrap(),
+                    )
+                    .unwrap(),
+                );
+                duration.reset_duration = 0.;
+            }
+            // Display reset duration. The amount of "." is
+            // corresponging to how many seconds passed.
+            text.0 = format!(
                 "{}秒後にステージをリセット",
-                ((RESET_EXPECTED_PRESSTIME - lmc.reset_duration) as usize + 1)
-            ) + &".".repeat(lmc.reset_duration as usize);
+                (RESET_EXPECTED_PRESSTIME - duration.reset_duration).ceil() as u32
+            ) + &".".repeat(duration.reset_duration as usize);
         } else {
-            tex.0 = String::new();
+            duration.reset_duration = 0.;
+            text.0 = String::new();
         }
     }
 }
 
+/// In this system, updating StageIndexDisplay with latest information
+/// and hidding it on out of GamePlay state.
 pub fn stage_index_display(
     state: Res<State<MacroStates>>,
     mut text_query: Query<&mut Text, With<StageIndexDisplay>>,

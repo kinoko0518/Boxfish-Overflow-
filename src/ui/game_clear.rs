@@ -1,21 +1,34 @@
+use crate::prelude::*;
 use bevy::prelude::*;
 
-use crate::{MacroStates, boxfish::ResultManager, prelude::NewGame, ui::UIResource};
+use crate::{boxfish::ResultManager, ui::UIResource};
+
+const S_RANK_MAX: u32 = 400;
+const A_RANK_MAX: u32 = 450;
+const B_RANK_MAX: u32 = 500;
 
 #[derive(Component)]
-pub struct ReturnToMainMenu;
+/// Reference [return_to_main_menu_button]
+/// how a button with this component works.
+pub struct ReturnToMainMenuButton;
 
-pub fn construction(
+/// Constructing a result menu with those parts:
+///
+/// - Steps
+/// - Rank
+/// - Prize (Originally, it was a project for my school festival)
+/// - Back to main screen
+pub fn result_menu_construction(
     mut commands: Commands,
     result_manager: Res<ResultManager>,
     ucr: Res<UIResource>,
 ) {
     let steps = result_manager.steps;
-    let (rank, prize) = if steps < 400 {
+    let (rank, prize) = if steps < S_RANK_MAX {
         ("S", "カントリーマアム2枚獲得！")
-    } else if steps < 450 {
+    } else if steps < A_RANK_MAX {
         ("A", "カントリーマアム1枚獲得！")
-    } else if steps < 500 {
+    } else if steps < B_RANK_MAX {
         ("B", "チョコ2個獲得！")
     } else {
         ("C", "チョコ1個獲得！")
@@ -52,7 +65,7 @@ pub fn construction(
             },
         ))
         .with_child((
-            Text::new(format!("{}", prize)),
+            Text::new(prize.to_string()),
             TextColor::WHITE,
             TextFont {
                 font: ucr.font.clone(),
@@ -69,22 +82,21 @@ pub fn construction(
                 ..default()
             },
             Button,
-            ReturnToMainMenu,
+            ReturnToMainMenuButton,
         ));
 }
 
+/// On a button which has a [ReturnToMainMenuButton] component clicked,
+/// reset the game then back to the main menu.
 pub fn return_to_main_menu_button(
     mut construct_stage: EventWriter<NewGame>,
-    query: Query<&Interaction, (Changed<Interaction>, With<ReturnToMainMenu>)>,
+    query: Query<&Interaction, (Changed<Interaction>, With<ReturnToMainMenuButton>)>,
     mut state: ResMut<NextState<MacroStates>>,
 ) {
     for i in query {
-        match i {
-            Interaction::Pressed => {
-                construct_stage.write(NewGame);
-                state.set(MacroStates::MainMenu);
-            }
-            _ => (),
+        if *i == Interaction::Pressed {
+            construct_stage.write(NewGame);
+            state.set(MacroStates::ESCMenu);
         }
     }
 }

@@ -1,5 +1,5 @@
+mod esc_menu;
 mod game_clear;
-mod main_menu;
 mod operation_hint;
 mod reset_exit_hint;
 
@@ -13,30 +13,32 @@ const PERCENT_PER_PIXEL: f32 = 6. / 32.;
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<UIResource>()
-            .init_resource::<reset_exit_hint::LUMessageConstainer>()
             .add_systems(Startup, init_ucr)
-            .add_systems(PostStartup, reset_exit_hint::ui_construction)
+            .add_systems(PostStartup, reset_exit_hint::upper_left_menu_construction)
             .add_systems(
-                OnEnter(MacroStates::MainMenu),
-                main_menu::construct_ui.after(init_ucr),
+                OnEnter(MacroStates::ESCMenu),
+                esc_menu::construct_esc_menu.after(init_ucr),
             )
             .add_systems(
                 OnEnter(MacroStates::GamePlay),
-                operation_hint::construct_ui.after(init_ucr),
+                operation_hint::construct_operation_hint.after(init_ucr),
             )
-            .add_systems(OnEnter(MacroStates::GameClear), game_clear::construction)
+            .add_systems(
+                OnEnter(MacroStates::GameClear),
+                game_clear::result_menu_construction,
+            )
             .add_systems(
                 Update,
-                (reset_exit_hint::countup_duration,).run_if(in_state(MacroStates::GamePlay)),
+                (reset_exit_hint::countup_reset_duration,).run_if(in_state(MacroStates::GamePlay)),
             )
             .add_systems(
                 Update,
                 (
-                    main_menu::end_game_button,
-                    main_menu::start_button,
-                    main_menu::button_sounds,
+                    esc_menu::on_quit_button_clicked,
+                    esc_menu::on_start_button_clicked,
+                    esc_menu::button_sounds,
                 )
-                    .run_if(in_state(MacroStates::MainMenu)),
+                    .run_if(in_state(MacroStates::ESCMenu)),
             )
             .add_systems(
                 Update,
@@ -46,7 +48,7 @@ impl Plugin for UIPlugin {
     }
 }
 
-// UIで使われるデータを読み込み・保管
+/// Regist resources used in UI
 #[derive(Resource, Default)]
 pub struct UIResource {
     font: Handle<Font>,
@@ -59,6 +61,7 @@ pub struct UIResource {
     menu_enter: Handle<AudioSource>,
 }
 
+/// This function loads UI's common resources
 pub fn init_ucr(mut ucr: ResMut<UIResource>, asset_server: Res<AssetServer>) {
     ucr.font = asset_server.load("embedded://fonts/k8x12.ttf");
     ucr.text_font = TextFont {
@@ -74,6 +77,7 @@ pub fn init_ucr(mut ucr: ResMut<UIResource>, asset_server: Res<AssetServer>) {
     ucr.menu_exit = asset_server.load("embedded://sound_effects/shrink.wav");
 }
 
+/// Toggle pause menu and gameplay using ESC key
 pub fn toggle_menu(
     mut commands: Commands,
     mut state_mut: ResMut<NextState<MacroStates>>,
@@ -86,13 +90,13 @@ pub fn toggle_menu(
             mode: PlaybackMode::Despawn,
             ..default()
         };
-        match state.get() {
-            &MacroStates::GamePlay => {
-                commands.spawn((AudioPlayer(ucr.menu_exit.clone()), playback_style.clone()));
-                state_mut.set(MacroStates::MainMenu);
+        match *state.get() {
+            MacroStates::GamePlay => {
+                commands.spawn((AudioPlayer(ucr.menu_exit.clone()), playback_style));
+                state_mut.set(MacroStates::ESCMenu);
             }
-            &MacroStates::MainMenu => {
-                commands.spawn((AudioPlayer(ucr.menu_enter.clone()), playback_style.clone()));
+            MacroStates::ESCMenu => {
+                commands.spawn((AudioPlayer(ucr.menu_enter.clone()), playback_style));
                 state_mut.set(MacroStates::GamePlay);
             }
             _ => (),

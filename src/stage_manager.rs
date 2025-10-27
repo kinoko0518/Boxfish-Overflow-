@@ -19,16 +19,19 @@ impl Plugin for StageManagerPlugin {
             .add_event::<NewGame>()
             .init_resource::<StageManager>()
             .init_resource::<StageInfo>()
-            .add_systems(Startup, (setup_stage_manager, new_game).chain())
+            .add_systems(
+                Startup,
+                (setup_stage_manager, reset_into_first_stage).chain(),
+            )
             .add_systems(
                 Update,
                 (
                     call_next_aquarium,
                     soundeffect_on_stage_loaded,
-                    new_game.run_if(on_event::<NewGame>),
+                    reset_into_first_stage.run_if(on_event::<NewGame>),
                 ),
             )
-            .add_systems(PostUpdate, analyse_stage);
+            .add_systems(PostUpdate, analyse_stage_collisions);
     }
 }
 
@@ -56,14 +59,14 @@ pub struct StageInfo {
     pub semicollisions: Collision,
 }
 
-const STAGE_0: &'static str = include_str!("../assets/stages/stage_0.toml");
-const STAGE_1: &'static str = include_str!("../assets/stages/stage_1.toml");
-const STAGE_2: &'static str = include_str!("../assets/stages/stage_2.toml");
-const STAGE_3: &'static str = include_str!("../assets/stages/stage_3.toml");
-const STAGE_4: &'static str = include_str!("../assets/stages/stage_4.toml");
-const STAGE_5: &'static str = include_str!("../assets/stages/stage_5.toml");
-const STAGE_6: &'static str = include_str!("../assets/stages/stage_6.toml");
-const STAGE_7: &'static str = include_str!("../assets/stages/stage_7.toml");
+const STAGE_0: &str = include_str!("../assets/stages/stage_0.toml");
+const STAGE_1: &str = include_str!("../assets/stages/stage_1.toml");
+const STAGE_2: &str = include_str!("../assets/stages/stage_2.toml");
+const STAGE_3: &str = include_str!("../assets/stages/stage_3.toml");
+const STAGE_4: &str = include_str!("../assets/stages/stage_4.toml");
+const STAGE_5: &str = include_str!("../assets/stages/stage_5.toml");
+const STAGE_6: &str = include_str!("../assets/stages/stage_6.toml");
+const STAGE_7: &str = include_str!("../assets/stages/stage_7.toml");
 
 pub fn setup_stage_manager(mut stage: ResMut<StageManager>, asset_server: Res<AssetServer>) {
     stage.stages = vec![
@@ -72,18 +75,21 @@ pub fn setup_stage_manager(mut stage: ResMut<StageManager>, asset_server: Res<As
     stage.on_loaded_soundeffect = asset_server.load("embedded://sound_effects/load_stage.ogg");
 }
 
-pub fn new_game(
+/// Reset [StageManager]'s index, then call [ConstructAquarium] event on the first stage.
+pub fn reset_into_first_stage(
     mut stage: ResMut<StageManager>,
     mut construct_stage: EventWriter<ConstructAquarium>,
 ) {
     stage.index = 0;
     construct_stage
-        .write(toml::from_str(stage.stages.get(0).unwrap()).expect("Stage 0 is broken!"));
+        .write(toml::from_str(stage.stages.first().unwrap()).expect("Stage 0 is broken!"));
 }
 
 #[derive(Event)]
+/// On the event was called, the game will be completedly reseted.
 pub struct NextStage;
 
+/// Loading next aquarium, if it doesn't exist, [MacroStates] will be set GameClear.
 pub fn call_next_aquarium(
     mut stage_manager: ResMut<StageManager>,
     mut construct_aquarium: EventWriter<ConstructAquarium>,
@@ -105,6 +111,7 @@ pub fn call_next_aquarium(
     }
 }
 
+/// Ringing a bell sound on a stage loaded
 pub fn soundeffect_on_stage_loaded(
     mut commands: Commands,
     stage_manager: Res<StageManager>,
@@ -122,7 +129,8 @@ pub fn soundeffect_on_stage_loaded(
     }
 }
 
-pub fn analyse_stage(
+/// Reading a new stage, then regist [Collidable] and [SemiCollidable] into [StageInfo]
+pub fn analyse_stage_collisions(
     mut stage_info: ResMut<StageInfo>,
     mut construction_completed: EventReader<ConstructionCompleted>,
     collisions: Query<&TileCoords, With<Collidable>>,

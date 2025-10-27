@@ -1,8 +1,19 @@
 use super::PERCENT_PER_PIXEL;
-use crate::{MacroStates, ui::UIResource};
+use crate::prelude::*;
+use crate::ui::UIResource;
 use bevy::prelude::*;
 
-pub fn construct_ui(mut commands: Commands, ucr: Res<UIResource>, oper_hint_res: Res<UIResource>) {
+/// Constructing a operation hint with those parts:
+///
+/// - How to move
+/// - WASD icon
+/// - How to expand
+/// - Enter icon
+pub fn construct_operation_hint(
+    mut commands: Commands,
+    ucr: Res<UIResource>,
+    oper_hint_res: Res<UIResource>,
+) {
     commands
         .spawn((
             Node {

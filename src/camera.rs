@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{MacroStates, prelude::*};
+use crate::prelude::*;
 
 pub struct CameraPlugin;
 
@@ -68,8 +68,8 @@ pub fn move_to_ideal(
         let travel = time.delta_secs() / OPEN_CLOSE_DURATION;
         // 0.~1.の範囲でprogressを再代入
         cam_res.progress = match state.get() {
-            &MacroStates::MainMenu => (1. as f32).min(cam_res.progress + travel),
-            _ => (0. as f32).max(cam_res.progress - travel),
+            &MacroStates::ESCMenu => (1_f32).min(cam_res.progress + travel),
+            _ => (0_f32).max(cam_res.progress - travel),
         }
     }
 }
