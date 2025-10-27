@@ -7,6 +7,7 @@ const BOXFISH_PATH: &str = "embedded://boxfish/boxfish.png";
 const BOOLEAN_PATH: &str = "embedded://boxfish/0_to_1_to_0.png";
 
 #[derive(Resource, Default)]
+/// Registing player's sprite map and atlas layout.
 pub struct PlayerImage {
     image: Handle<Image>,
     atlas_layout: Handle<TextureAtlasLayout>,
@@ -16,6 +17,7 @@ impl PlayerImage {
     pub fn index_to_sprite(&self, x: usize, y: usize) -> Sprite {
         Sprite::from_atlas_image(self.image.clone(), self.index_to_atlas(x, y))
     }
+    /// Getting a texture atlas of player's sprite map from x and y.
     pub fn index_to_atlas(&self, x: usize, y: usize) -> TextureAtlas {
         TextureAtlas {
             layout: self.atlas_layout.clone(),
@@ -76,18 +78,18 @@ pub fn face_manager(
     player_image: Res<PlayerImage>,
 ) {
     if let Ok((mut sprite, col_anim, head)) = query.single_mut() {
-        sprite.texture_atlas = Some(player_image.index_to_atlas(
-            2,
-            match col_anim {
-                Some(_) => 2,
-                None => {
-                    if head.is_expanding {
-                        1
-                    } else {
-                        0
-                    }
+        // Boxfish's head texture is at 2nd row.
+        // So, by specifing line, the face of boxfish can be specified.
+        let face_kind = match col_anim {
+            Some(_) => 2, // Surprising face
+            None => {
+                if head.is_expanding {
+                    1 // Expanding face
+                } else {
+                    0 // Neutral face
                 }
-            },
-        ));
+            }
+        };
+        sprite.texture_atlas = Some(player_image.index_to_atlas(2, face_kind));
     }
 }
