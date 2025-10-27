@@ -105,7 +105,7 @@ pub fn process_gate_effect_for_each_bit(
     let from = head_coord_before_move + IVec2::new(local_x_from_head, 0);
     for (gate_coords, gate_bit, logikind) in gates {
         if !collide_with(&from, &travel, gate_coords) {
-            return;
+            continue;
         }
         let now = bit.boolean;
         match logikind {
