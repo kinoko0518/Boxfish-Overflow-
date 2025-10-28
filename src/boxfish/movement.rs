@@ -31,11 +31,12 @@ impl Plugin for MovementPlugin {
             .add_systems(
                 Update,
                 (
+                    get_player_input,
+                    move_to_ideal_position,
+                    regist_movement_history,
                     step_counter,
                     collision::goal_detection_system,
                     expansion::get_expand_input,
-                    boxfish_moving,
-                    regist_movement_history,
                     undo,
                 )
                     .run_if(in_state(MacroStates::GamePlay)),
@@ -44,12 +45,118 @@ impl Plugin for MovementPlugin {
 }
 
 #[derive(Event)]
+/// Emitted when the player's move attempt succeeds.
+///
+/// This is not emitted if the move was blocked (e.g., by a wall).
 pub struct OnMoved {
     pub travel: Travel,
 }
 
+/// How many seconds will the boxfish take to move a tile.
 const SECONDS_PER_TILE: f32 = 0.2;
 
+fn get_body_length(body_query: &Query<&BitIter, With<Body>>, head: &Head) -> usize {
+    body_query
+        .iter()
+        .map(|bit_iter| 1 + if head.is_expanding { bit_iter.pos } else { 1 })
+        .max()
+        .unwrap_or(1)
+}
+
+/// Move the boxfish by the player's operation.
+pub fn get_player_input(
+    mut commands: Commands,
+    mut player_query: Query<
+        (&mut Transform, &mut TileCoords, Entity, &Head),
+        Without<PlayerCollidedAnimation>,
+    >,
+    body_query: Query<&BitIter, With<Body>>,
+    stage_info: Res<StageInfo>,
+    mut on_moved: EventWriter<OnMoved>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    gamepad_input: Query<&Gamepad>,
+) {
+    if let Ok((mut transform, mut tile, entity, head)) = player_query.single_mut() {
+        let body_length = get_body_length(&body_query, &head);
+        let target_pos = TileCoords::ivec2_to_vec2(tile.tile_pos);
+        let current_pos = transform.translation.xy();
+        let difference = target_pos - current_pos;
+
+        // Check as if ideal position and real position corresponding
+        if difference.length() > 0.1 {
+            return;
+        }
+
+        // When corresponding, accept player input
+        transform.translation.x = target_pos.x;
+        transform.translation.y = target_pos.y;
+
+        let direction = player_input(&keyboard_input, &gamepad_input);
+
+        if direction.amount == 0 {
+            return;
+        }
+
+        // 膨らんでいるか、縮んでいるかで衝突判定が異なるため
+        let collision = if !head.is_expanding {
+            // 膨らんでいなければゲート、ビット(Semicollidable)
+            // と壁(Collidable)両方を対象にする
+            stage_info.collisions.clone() + stage_info.semicollisions.clone()
+        } else {
+            // 膨らんでいれば壁(Collidable)のみを対象にする
+            stage_info.collisions.clone()
+        };
+        // 頭から尾まで衝突判定を行い、いずれかが衝突していれば衝突
+        let was_collided = (0..(body_length + 1)).any(|iter| {
+            collision.do_collide(&(tile.tile_pos - IVec2::new(iter as i32, 0)), &direction)
+        });
+        if !was_collided {
+            // 衝突しなかったなら移動
+            tile.tile_pos += direction.into_ivec2();
+            on_moved.write(OnMoved { travel: direction });
+        } else {
+            // 衝突したならぶつかったアニメーションを再生する
+            commands.entity(entity).insert(PlayerCollidedAnimation {
+                progress: 0.,
+                travel: direction,
+            });
+        }
+    }
+}
+
+pub fn move_to_ideal_position(
+    time: Res<Time>,
+    mut player_query: Query<
+        (&mut Transform, &TileCoords),
+        (Without<PlayerCollidedAnimation>, With<Head>),
+    >,
+) {
+    if let Ok((mut transform, tile)) = player_query.single_mut() {
+        let target_pos = TileCoords::ivec2_to_vec2(tile.tile_pos);
+        let current_pos = transform.translation.xy();
+        let difference = target_pos - current_pos;
+
+        // Check as if ideal position and real position corresponding
+        if difference.length() < 0.1 {
+            return;
+        }
+
+        // When not, move character to ideal position
+        let move_speed = TILE_SIZE as f32 / SECONDS_PER_TILE;
+        let direction_vec = difference.normalize();
+        let travel_in_frame = direction_vec * move_speed * time.delta_secs();
+
+        // Adjust when overred
+        if travel_in_frame.length() >= difference.length() {
+            transform.translation.x = target_pos.x;
+            transform.translation.y = target_pos.y;
+        } else {
+            transform.translation += Vec3::new(travel_in_frame.x, travel_in_frame.y, 0.0);
+        }
+    }
+}
+
+/// Regist the last coords before moving to the history.
 pub fn regist_movement_history(
     mut query: Query<(&mut Head, &TileCoords)>,
     mut travel: EventReader<OnMoved>,
@@ -62,6 +169,7 @@ pub fn regist_movement_history(
     }
 }
 
+/// Undo the last operation when Ctrl+Z pressed, by reproducting the last status.
 pub fn undo(
     head_query: Query<(&mut TileCoords, &mut Transform, &mut Head)>,
     bit_query: Query<&mut BoxfishRegister>,
@@ -83,80 +191,6 @@ pub fn undo(
         for mut register in bit_query {
             if let Some(last) = register.history.pop() {
                 register.boolean = last;
-            }
-        }
-    }
-}
-
-pub fn boxfish_moving(
-    mut commands: Commands,
-    time: Res<Time>,
-    mut player_query: Query<
-        (&mut Transform, &mut TileCoords, Entity, &Head),
-        Without<PlayerCollidedAnimation>,
-    >,
-    stage_info: Res<StageInfo>,
-    mut on_moved: EventWriter<OnMoved>,
-    body_query: Query<&BitIter, With<Body>>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    gamepad_input: Query<&Gamepad>,
-) {
-    if let Ok((mut transform, mut tile, entity, head)) = player_query.single_mut() {
-        let body_length: usize = body_query
-            .iter()
-            .map(|bit_iter| 1 + if head.is_expanding { bit_iter.pos } else { 1 })
-            .max()
-            .unwrap_or(1);
-        let target_pos = TileCoords::ivec2_to_vec2(tile.tile_pos);
-        let current_pos = transform.translation.xy();
-        let difference = target_pos - current_pos;
-
-        // Check as if ideal position and real position corresponding
-        if difference.length() < 0.1 {
-            // When corresponding, accept player input
-            transform.translation.x = target_pos.x;
-            transform.translation.y = target_pos.y;
-
-            let direction = player_input(&keyboard_input, &gamepad_input);
-
-            if direction.amount != 0 {
-                // 膨らんでいるか、縮んでいるかで衝突判定が異なるため
-                let collision = if !head.is_expanding {
-                    // 膨らんでいなければゲート、ビット(Semicollidable)
-                    // と壁(Collidable)両方を対象にする
-                    stage_info.collisions.clone() + stage_info.semicollisions.clone()
-                } else {
-                    // 膨らんでいれば壁(Collidable)のみを対象にする
-                    stage_info.collisions.clone()
-                };
-                // 頭から尾まで衝突判定を行い、いずれかが衝突していれば衝突
-                let was_collided = (0..(body_length + 1)).any(|iter| {
-                    collision.do_collide(&(tile.tile_pos - IVec2::new(iter as i32, 0)), &direction)
-                });
-                if !was_collided {
-                    // 衝突しなかったなら移動
-                    tile.tile_pos += direction.into_ivec2();
-                    on_moved.write(OnMoved { travel: direction });
-                } else {
-                    // 衝突したならぶつかったアニメーションを再生する
-                    commands.entity(entity).insert(PlayerCollidedAnimation {
-                        progress: 0.,
-                        travel: direction,
-                    });
-                }
-            }
-        } else {
-            // When not, move character to ideal position
-            let move_speed = TILE_SIZE as f32 / SECONDS_PER_TILE;
-            let direction_vec = difference.normalize();
-            let travel_in_frame = direction_vec * move_speed * time.delta_secs();
-
-            // Adjust when overred
-            if travel_in_frame.length() >= difference.length() {
-                transform.translation.x = target_pos.x;
-                transform.translation.y = target_pos.y;
-            } else {
-                transform.translation += Vec3::new(travel_in_frame.x, travel_in_frame.y, 0.0);
             }
         }
     }

@@ -6,6 +6,35 @@ pub struct Travel {
     pub amount: i32,
 }
 
+impl std::fmt::Display for Travel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let translated = if self.amount == 0 {
+            ("Indeterminate", 0)
+        } else {
+            (
+                match self.direction {
+                    Direction::X => {
+                        if self.amount >= 0 {
+                            "Right"
+                        } else {
+                            "Left"
+                        }
+                    }
+                    Direction::Y => {
+                        if self.amount >= 0 {
+                            "Up"
+                        } else {
+                            "Down"
+                        }
+                    }
+                },
+                self.amount.abs(),
+            )
+        };
+        write!(f, "[Travel; {}; {}]", translated.0, translated.1)
+    }
+}
+
 #[derive(Clone)]
 pub enum Direction {
     X,
