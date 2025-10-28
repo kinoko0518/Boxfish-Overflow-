@@ -7,7 +7,7 @@ use bevy::prelude::*;
 ///
 /// という並びなら挟まれた真は類のLogiKindを持つ．
 /// そのためにデータを保持する構造体．
-pub struct State {
+pub struct LineContextContainer {
     pub bitkind: Option<LogiKind>,
     pub tail_found: bool,
 }
@@ -18,7 +18,7 @@ pub fn interprint_each_line_as_tile(
     y: usize,
     tile_resource: &Res<AquariumResource>,
 ) {
-    let mut state = State {
+    let mut state = LineContextContainer {
         bitkind: None,
         tail_found: false,
     };

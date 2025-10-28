@@ -1,6 +1,6 @@
 use super::{
     super::resource::AquariumResource, Goal, IncorrectBit, LogiKind, LogiRegister, TILE_LAYER,
-    Tiles, each_line::State,
+    Tiles, each_line::LineContextContainer,
 };
 use crate::{prelude::*, stage::SemiCollidable};
 use bevy::prelude::*;
@@ -11,7 +11,7 @@ fn generate_logical_gate(
     coords: (TileCoords, Transform),
     tilemap_index: (usize, usize),
     logikind: LogiKind,
-    state: &mut State,
+    state: &mut LineContextContainer,
     tile_resource: &Res<AquariumResource>,
 ) -> (Sprite, SemiCollidable, TileCoords, Transform, Tiles) {
     let gate_common_components = (coords.clone(), Tiles);
@@ -50,7 +50,7 @@ pub fn interprint_each_char_as_tile(
     x: usize,
     y: usize,
     tile_resource: &Res<AquariumResource>,
-    state: &mut State,
+    state: &mut LineContextContainer,
 ) {
     // Combining TileCoords and Transform for simplicity
     let coords = (
