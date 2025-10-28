@@ -2,9 +2,10 @@ use crate::boxfish::{BooleanImage, visual::PlayerImage};
 use crate::prelude::*;
 use bevy::prelude::*;
 
-/// ゲーム開始時に一度だけ呼び出され、プレイヤーの頭などの
-/// ゲームを通して削除されないものを配置し、最初のステージを読み込む。
-pub fn aquarium_setup(mut commands: Commands, player_image: Res<PlayerImage>) {
+/// Called when the game just executed once.
+///
+/// Spawn the boxfish's head which not deleted during game.
+pub fn spawn_boxfishs_head(mut commands: Commands, player_image: Res<PlayerImage>) {
     commands.spawn((
         player_image.index_to_sprite(2, 0),
         Transform::from_xyz(0., 0., PLAYER_LAYER),
@@ -19,8 +20,8 @@ pub fn aquarium_setup(mut commands: Commands, player_image: Res<PlayerImage>) {
     ));
 }
 
-/// 新しく読み込まれたステージを適用
-pub fn update_bits(
+/// Apply the stage that just loaded to the boxfish.
+pub fn update_player_to_just_loaded_stage(
     mut head_query: Query<(
         Entity,
         Option<&Children>,
@@ -33,72 +34,67 @@ pub fn update_bits(
     player_image: Res<PlayerImage>,
     boolean_image: Res<BooleanImage>,
 ) {
-    // ステージを読み込み
+    // Reading the new stage
     let aquarium = match construct_aquarium.read().next() {
         Some(aq) => aq,
         None => return,
     };
-    // ハコフグくんの頭を取得
+    // Getting the head of the boxfish
     let mut head = match head_query.single_mut() {
         Ok(h) => h,
         Err(_) => panic!("The head of the boxfish not found"),
     };
-    // 座標を更新
+    // Updating coords
     head.3.tile_pos = aquarium.player_origin;
     head.2.translation =
         (aquarium.player_origin.as_vec2() * (TILE_SIZE as f32)).extend(PLAYER_LAYER);
-    // 読み込み時点で膨らんでいるとおかしなことになるため、リセット
+    // Reset expansion
     head.4.is_expanding = false;
 
-    // 古いビットとしっぽを削除
+    // Delete old bits and a tail
     if let Some(children) = head.1 {
         for child in children {
             commands.entity(*child).despawn();
         }
     }
-    // 新しいビットを生成、idを取得してVec<Entity>にする
-    let bits = {
-        let mut ids = vec![];
+    // Generating new bits and a tail
+    commands.entity(head.0).with_children(|parent| {
+        let body_length = aquarium.player_defaultbits.len();
+        let bit_transform = Transform::from_xyz(0., 0., PLAYER_LAYER);
+        let tail_transform = Transform::from_xyz(-(TILE_SIZE as f32), 0., PLAYER_LAYER);
+
         for (iter, bit) in aquarium.player_defaultbits.iter().enumerate() {
-            let id = commands
+            parent
                 .spawn((
                     player_image.index_to_sprite(1, 0),
-                    Transform::from_xyz(0., 0., PLAYER_LAYER),
+                    bit_transform.clone(),
                     Body,
                     BitIter { pos: iter },
                     Player,
                 ))
                 .with_child((
                     boolean_image.y_to_sprite(0),
-                    Transform::from_xyz(0., 0., PLAYER_LAYER),
+                    bit_transform.clone(),
                     BoxfishRegister {
                         boolean: *bit,
                         history: Vec::new(),
                     },
                     BitIter { pos: iter },
                     Player,
-                ))
-                .id();
-            ids.push(id);
+                ));
         }
-        ids
-    };
-    // 生成されたビットのIDをもとにハコフグの頭の子にする
-    let mut head_command = commands.entity(head.0);
-    head_command.add_children(&bits);
+        // Spawn a tail
+        parent.spawn((
+            player_image.index_to_sprite(0, 0),
+            tail_transform,
+            Body,
+            BitIter { pos: body_length },
+            Tail,
+            Player,
+        ));
+    });
 
-    // しっぽを追加
-    let body_length = aquarium.player_defaultbits.len();
-    head_command.with_child((
-        player_image.index_to_sprite(0, 0),
-        Transform::from_translation(BitIter::get_position_on_the_length(body_length)),
-        Body,
-        BitIter { pos: body_length },
-        Tail,
-        Player,
-    ));
-
-    // 移動履歴をクリア
+    // Clear movement history
     for mut head in head_query {
         head.4.history = Vec::new();
     }

@@ -19,9 +19,9 @@ impl Plugin for PlayerPlugin {
             .add_plugins(MovementPlugin)
             .add_systems(
                 Startup,
-                (visual::assets_setup, construction::aquarium_setup).chain(),
+                (visual::assets_setup, construction::spawn_boxfishs_head).chain(),
             )
-            .add_systems(PreUpdate, construction::update_bits)
+            .add_systems(PreUpdate, construction::update_player_to_just_loaded_stage)
             .add_systems(
                 Update,
                 (
@@ -49,12 +49,6 @@ pub struct BoxfishRegister {
 #[derive(Component)]
 pub struct BitIter {
     pos: usize,
-}
-
-impl BitIter {
-    fn get_position_on_the_length(bit_length: usize) -> Vec3 {
-        Vec3::new(-(((bit_length + 1) * TILE_SIZE) as f32), 0., PLAYER_LAYER)
-    }
 }
 
 #[derive(Component)]
