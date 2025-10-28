@@ -97,25 +97,25 @@ pub fn get_player_input(
             return;
         }
 
-        // 膨らんでいるか、縮んでいるかで衝突判定が異なるため
         let collision = if !head.is_expanding {
-            // 膨らんでいなければゲート、ビット(Semicollidable)
-            // と壁(Collidable)両方を対象にする
+            // If the boxfish wasn't expanding,
+            // take collisions and semicollisions as colliding targets.
             stage_info.collisions.clone() + stage_info.semicollisions.clone()
         } else {
-            // 膨らんでいれば壁(Collidable)のみを対象にする
+            // Take only collisions as colliding target
+            // on the boxfish is expanding.
             stage_info.collisions.clone()
         };
-        // 頭から尾まで衝突判定を行い、いずれかが衝突していれば衝突
+        // If any part of the boxfish, was_collided will be true
         let was_collided = (0..(body_length + 1)).any(|iter| {
             collision.do_collide(&(tile.tile_pos - IVec2::new(iter as i32, 0)), &direction)
         });
         if !was_collided {
-            // 衝突しなかったなら移動
+            // Move when the boxfish didn't collided anywhere
             tile.tile_pos += direction.into_ivec2();
             on_moved.write(OnMoved { travel: direction });
         } else {
-            // 衝突したならぶつかったアニメーションを再生する
+            // Play animation on the boxfish collided
             commands.entity(entity).insert(PlayerCollidedAnimation {
                 progress: 0.,
                 travel: direction,
