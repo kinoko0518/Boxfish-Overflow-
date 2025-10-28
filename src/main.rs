@@ -3,11 +3,11 @@
     windows_subsystem = "windows"
 )]
 
-mod aquarium;
 mod boxfish;
 mod camera;
 mod music;
 pub mod prelude;
+mod stage;
 mod stage_manager;
 mod styling;
 mod ui;
@@ -17,7 +17,7 @@ use bevy_embedded_assets::EmbeddedAssetPlugin;
 use boxfish::PlayerPlugin;
 
 use crate::{
-    aquarium::AquariumPlugin, camera::CameraPlugin, music::MusicPlugin, prelude::*,
+    camera::CameraPlugin, music::MusicPlugin, prelude::*, stage::AquariumPlugin,
     stage_manager::StageManagerPlugin, styling::StylingPlugin, ui::UIPlugin,
 };
 

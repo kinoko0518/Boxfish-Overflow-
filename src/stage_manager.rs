@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     MacroStates,
-    aquarium::{ConstructionCompleted, SemiCollidable},
     prelude::{Collidable, Collision, TileCoords},
+    stage::{ConstructionCompleted, SemiCollidable},
 };
 
 pub struct StageManagerPlugin;

@@ -1,5 +1,4 @@
 pub use crate::{
-    aquarium::Collidable,
     boxfish::{
         BitIter, Body, BoxfishRegister, Head, PLAYER_LAYER, Player, Tail,
         movement::{
@@ -8,6 +7,7 @@ pub use crate::{
             input::{Direction, Travel},
         },
     },
+    stage::Collidable,
     stage_manager::{ConstructAquarium, NewGame, StageManager},
 };
 use bevy::prelude::*;

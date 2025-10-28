@@ -2,7 +2,7 @@ mod construction;
 mod resource;
 mod visual;
 
-pub use crate::aquarium::resource::AquariumResource;
+pub use crate::stage::resource::AquariumResource;
 
 use crate::prelude::*;
 use bevy::prelude::*;
@@ -16,33 +16,37 @@ impl Plugin for AquariumPlugin {
             .add_systems(Startup, resource::init_aquarium_resource)
             .add_systems(Update, visual::highlight_incorrect_bits)
             .add_systems(Update, visual::goal_swaying)
-            .add_systems(Update, parse_aquarium);
+            .add_systems(Update, parse_stage);
     }
 }
 
 #[derive(Component)]
-/// アクアリウム上のタイルを識別するコンポーネント
-/// このコンポーネントが付与されていれば新しいシーンが読み込まれたときに消滅する
+/// This is a component to detect tiles on stages.
+///
+/// With this component, a attached entity
+/// will be disapper on a new stage loaded.
 pub struct Tiles;
 
 #[derive(Component)]
-/// プレイヤーが衝突するタイルを識別するコンポーネント
+/// This is a component to detect that
+/// does the tile collide with the boxfish.
 pub struct Collidable;
 
 #[derive(Component)]
-/// 膨張しているときに通れないタイルを識別するコンポーネント
+/// This is a component to detect that
+/// does the tile collide with the boxfish
+/// when the boxfish isn't expanding.
 pub struct SemiCollidable;
 
 #[derive(Component, Debug)]
-/// ゲートのうち、プレイヤーと接触したときに異なるビットだった、
-/// すなわち条件が満たされていないビットを赤くハイライトするためのコンポーネント
-/// remainingは自然に減少し、255であるときに完全に赤くなる。
+/// This is a component to highlight gates with red colour,
+/// which was different from a collided player's register.
 pub struct IncorrectBit {
     pub remaining: u8,
 }
 
 #[derive(Component)]
-/// 論理ゲートのレジスタのコンポーネント
+/// This is a component for logical gates' register.
 pub struct LogiRegister {
     pub boolean: bool,
     pub logikind: LogiKind,
@@ -69,7 +73,7 @@ pub struct StageCompleted;
 #[derive(Event)]
 pub struct ConstructionCompleted;
 
-pub fn parse_aquarium(
+pub fn parse_stage(
     mut commands: Commands,
     tile_resource: Res<AquariumResource>,
     old_tiles: Query<Entity, With<Tiles>>,

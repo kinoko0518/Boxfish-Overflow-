@@ -4,7 +4,7 @@ use bevy::{audio::Volume, prelude::*};
 use itertools::Itertools;
 use std::{f32::consts::PI, ops::Add};
 
-use crate::aquarium::{Goal, StageCompleted};
+use crate::stage::{Goal, StageCompleted};
 
 /// 単一の対象に対して衝突判定を行う
 pub fn collide_with(original: &IVec2, travel: &Travel, target: &IVec2) -> bool {
